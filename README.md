@@ -57,7 +57,7 @@ NB: Rather than merge into global roads, rather just clip the rough-clipped road
 
 ## Access-Estimator
 1. Run access.py (based on access_rates.py)
-2. Run ...py
+2. Run local.py (based on lv_length.py)
 2. modify LV formula to return length, then static multiply to get cost
 
 # Processing results
