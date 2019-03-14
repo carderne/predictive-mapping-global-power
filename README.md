@@ -1,4 +1,9 @@
 # Issues
+- I used pop for connection costs, should be pop_access*connection/people_per_hh!
+- Isolated networks
+- LV calc should take into account demand
+- Separate OSM HV and MV
+- Add 'debug?' parameter to noisy functions
 - MV wasn't thinned (only skeletonizes after guess.tif)
 - overlay HV
 - Isolated networks
@@ -108,23 +113,9 @@ All QGIS.
 ## LV
 Output from model is km per cell.
 1. Same as 1-2 of MV infra costs
-2. Need to make as ghs.tif:
+2. Calculate cost: RES * COST * lv_km + pop_access * CONN_COST/PEOPLE_PER_HH
     ```
-    import os
-    import gdal
-    from gdalconst import GA_ReadOnly
-
-    data = gdal.Open('img_mask.tif', GA_ReadOnly)
-    geoTransform = data.GetGeoTransform()
-    minx = geoTransform[0]
-    maxy = geoTransform[3]
-    maxx = minx + geoTransform[1] * data.RasterXSize
-    miny = maxy + geoTransform[5] * data.RasterYSize
-    os.system('gdal_translate -projwin ' + ' '.join([str(x) for x in [minx, maxy, maxx, miny]]) + ' -of GTiff img_orig.tif img_out.tif')
-    ```
-3. Calculate cost: RES * COST * lv_km + ghs * CONN_COST/PEOPLE_PER_HH
-    ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km_clip.tif -B ../pop/ghs.tif --outfile=lv_cost.tif --calc="0.25*15000*A+B*500/4"
+    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km_clip.tif -B pop_access.tif --outfile=lv_cost.tif --calc="0.25*15000*A+B*500/4"
     ```
 
 # GDAL/OGR/OSM stuff
