@@ -1,4 +1,5 @@
 # Issues
+- MV wasn't thinned (only skeletonizes after guess.tif)
 - overlay HV
 - Isolated networks
 - Artifacts on borders (fix by clip with gadm)
@@ -64,7 +65,7 @@ NB: Rather than merge into global roads, rather just clip the rough-clipped road
 ## HV
 ### For HV infra
 - QGIS: Rasterize high-res (same cell size and extent as mv, burn 1, nodata 0, pre-init 0, COMPRESS=LZW, TILED=YES)
-- Multiply by 0.49*USD/km
+- Multiply by 0.49*USD/km (cost = 200k USD/km)
 
 ### For buffer zone
 All QGIS.
@@ -99,9 +100,31 @@ All QGIS.
     gdal_translate -co "COMPRESS=LZW" -co "TILED=YES" -of GTiff -a_nodata 0 mv_binary_filt.tif mv_binary_filt_null.tif
     ```
 
-5. Multiply by 0.49*USD/km
+5. Multiply by 0.49*USD/km (cost = 40k USD/km)
     ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_binary.tif --outfile=mv_km.tif --calc="0.49*COST*A"
+    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_binary.tif --outfile=mv_km.tif --calc="0.49*40000*A"
+    ```
+
+## LV
+Output from model is km per cell.
+1. Same as 1-2 of MV infra costs
+2. Need to make as ghs.tif:
+    ```
+    import os
+    import gdal
+    from gdalconst import GA_ReadOnly
+
+    data = gdal.Open('img_mask.tif', GA_ReadOnly)
+    geoTransform = data.GetGeoTransform()
+    minx = geoTransform[0]
+    maxy = geoTransform[3]
+    maxx = minx + geoTransform[1] * data.RasterXSize
+    miny = maxy + geoTransform[5] * data.RasterYSize
+    os.system('gdal_translate -projwin ' + ' '.join([str(x) for x in [minx, maxy, maxx, miny]]) + ' -of GTiff img_orig.tif img_out.tif')
+    ```
+3. Calculate cost: RES * COST * lv_km + ghs * CONN_COST/PEOPLE_PER_HH
+    ```
+    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km_clip.tif -B ../pop/ghs.tif --outfile=lv_cost.tif --calc="0.25*15000*A+B*500/4"
     ```
 
 # GDAL/OGR/OSM stuff
@@ -115,4 +138,3 @@ Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 - merge: `ogrmerge.py -f GPKG -o ../merged1.gpkg *.gpkg`
 - compress: `gdal_translate -of GTiff -co "COMPRESS=LZW" -co "TILED=YES" Kenya.tif kcomp.tif`
 
-# Merge lots of vectors
