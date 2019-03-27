@@ -1,13 +1,12 @@
 # Issues
-- I used pop for connection costs, should be pop_access*connection/people_per_hh!
+- Need to see if works okay with pre-merged raster
 - Isolated networks
 - LV calc should take into account demand
 - Separate OSM HV and MV
 - Add 'debug?' parameter to noisy functions
 - MV wasn't thinned (only skeletonizes after guess.tif)
 - overlay HV
-- Isolated networks
-- Artifacts on borders (fix by clip with gadm)
+- Artifacts on borders (clip only after create targets)
 - Use country codes
 - Use GADM instead of simplified (keep simplified road network)
 - Optimise (numba, what else?)
@@ -38,7 +37,7 @@ Antarctica
 3. GHS URB/RUR from: https://ghsl.jrc.ec.europa.eu/ghs_smod.php
 4. VIIRS from: https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html (use noaa_scrape.py to get all monthly files)
 5. GADM from: https://gadm.org/
-6. Simple admin from: http://naturalearthdata.com/
+6. Simple admin (NE_50m_admin0) from: http://naturalearthdata.com/
 
 ## VIIRS
 1. Use dl.sh to download
@@ -47,10 +46,24 @@ Antarctica
 4. Similar for single annual raster
 
 ## Roads
-NB: Rather than merge into global roads, rather just clip the rough-clipped roads using GADM before rasterize.
+1. ogr2poly.py to convert simple admin to separate poly files (and buffer by 100km)
+    ```
+    python ogr2poly.py -b 100000 -f ADM0_A3 ne_50m_admin0.gpkg
+    ```
 
-1. ogr2poly.py to convert simple admin to separate poly files
-2. osm2gpkg.py to convert to o5m and roads gpkg
+2. clip_osm.py to clip into individual country o5m files:
+    ```
+    python3 clip_osm.py planet.pbf poly o5m
+    ```
+
+3. Edit /usr/share/gdal/2.2/osmconf.ini:
+    ```
+    [lines]
+    ...
+    attributes=...,power,voltage
+    ```
+
+3. osm2gpkg.py to convert to roads gpkg
 3. Use merge_lots.sh
 
 ## Grid
@@ -113,9 +126,9 @@ All QGIS.
 ## LV
 Output from model is km per cell.
 1. Same as 1-2 of MV infra costs
-2. Calculate cost: RES * COST * lv_km + pop_access * CONN_COST/PEOPLE_PER_HH
+2. Calculate cost: RES * COST * lv_km
     ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km_clip.tif -B pop_access.tif --outfile=lv_cost.tif --calc="0.25*15000*A+B*500/4"
+    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km.tif --outfile=lv_cost.tif --calc="0.25*15000*A"
     ```
 
 # GDAL/OGR/OSM stuff
@@ -128,4 +141,4 @@ Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 - mosaic: `gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -o mv_binary.tif nulled/*.tif`
 - merge: `ogrmerge.py -f GPKG -o ../merged1.gpkg *.gpkg`
 - compress: `gdal_translate -of GTiff -co "COMPRESS=LZW" -co "TILED=YES" Kenya.tif kcomp.tif`
-
+- tiling: `for i in *; do gdal_retile.py -ps 10000 10000 -targetDir ../tiled $i; done`
