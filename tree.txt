@@ -1,0 +1,42 @@
+.
+├── admin
+│   └── poly
+├── costs
+├── costs_vec
+├── guess
+│   ├── nulled
+│   └── raw
+├── lost+found [error opening dir]
+├── lv
+│   ├── nulled
+│   └── raw
+├── ntl
+│   ├── annual
+│   ├── input
+│   │   ├── 01
+│   │   ├── 02
+│   │   ├── 03
+│   │   ├── 04
+│   │   ├── 05
+│   │   ├── 06
+│   │   ├── 07
+│   │   ├── 08
+│   │   ├── 09
+│   │   ├── 10
+│   │   ├── 11
+│   │   └── 12
+│   └── monthly
+├── osm
+│   └── o5m
+├── output
+├── pop
+├── pop_elec
+│   ├── nulled
+│   └── raw
+├── targets
+│   ├── nulled
+│   └── temp
+└── vector
+    └── sep
+
+39 directories
