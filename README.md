@@ -6,15 +6,7 @@
 - Add 'debug?' parameter to noisy functions
 - MV wasn't thinned (only skeletonizes after guess.tif)
 - overlay HV
-- Artifacts on borders (clip only after create targets)
-- Use country codes
-- Use GADM instead of simplified (keep simplified road network)
 - Optimise (numba, what else?)
-- Get beefier instance (thanks Ben)
-- Parallelize
-- Pre-burn OSM
-- Use pre-cooked NTL?
-- Skip drop-sites?
 
 ## Difficult countries
 India
