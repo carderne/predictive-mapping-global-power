@@ -4,8 +4,6 @@
 - LV calc should take into account demand
 - Separate OSM HV and MV
 - Add 'debug?' parameter to noisy functions
-- MV wasn't thinned (only skeletonizes after guess.tif)
-- overlay HV
 - Optimise (numba, what else?)
 
 ## Difficult countries

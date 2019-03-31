@@ -27,8 +27,11 @@ ntl_in = data / 'ntl' / 'monthly'
 scratch = data / 'scratch'
 
 
-def spawn(tool):
-    countries = admin[code].tolist()
+def spawn(tool, country):
+    if country is not None:
+        countries = [country]
+    else:
+        countries = admin[code].tolist()
 
     p = Pool(processes=32)
     p.map(tool, countries)
@@ -173,6 +176,7 @@ def local(country):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
+    pasrer.add_argument("--country")
     args = parser.parse_args()
 
     switch = {
@@ -188,4 +192,4 @@ if __name__ == "__main__":
     if func is None:
         sys.exit(f"Option {args.tool} not supported")
 
-    spawn(func)
+    spawn(func, args.country)
