@@ -62,7 +62,7 @@ def targets(country):
 
             # Apply filter to NTL
             ntl_filter = create_filter()
-            ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter, upsample_by=1)
+            ntl_thresh, affine = prepare_ntl(ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1)
             save_raster(ntl_thresh_out, ntl_thresh, affine)
 
             # Clip to actual AOI
@@ -146,7 +146,7 @@ def vector(country):
     # Setup
     this_scratch = scratch / f"vector_{country}"
     guess_in = data / "guess" / f"{country}.tif"
-    guess_vec_out = data / "guess_vec" / f"{country}.tif"
+    guess_vec_out = data / "guess_vec" / f"{country}.gpkg"
 
     if guess_in.is_file() and not guess_vec_out.is_file():
         try:
@@ -176,7 +176,7 @@ def local(country):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
-    pasrer.add_argument("--country")
+    parser.add_argument("--country")
     args = parser.parse_args()
 
     switch = {
