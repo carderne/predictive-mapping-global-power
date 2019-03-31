@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from multiprocessing import Pool
 
+import pandas as pd
 import geopandas as gpd
 
 sys.path.append('gridfinder')
@@ -18,12 +19,16 @@ from gridfinder import *
 from access_estimator import *
 
 data = Path('data')
-admin_in = data / 'admin' / 'ne_50m_admin0.gpkg'
-admin = gpd.read_file(admin_in)
-
 code = 'ADM0_A3'
+admin_in = data / 'admin' / 'ne_50m_admin0.gpkg'
 ntl_in = data / 'ntl' / 'monthly'
-# pop_in = data / 'pop' / 'ghs.tif'
+pop_in = data / 'pop' / 'ghs.tif'
+urban_in = data / 'pop' / 'urb.tif'
+access_in = data / 'pop' / 'countries.csv'
+ntl_ann_in = data / 'ntl' / 'annual' / 'world.tif'
+
+admin = gpd.read_file(admin_in)
+access_rates = pd.read_csv(access_in)
 scratch = data / 'scratch'
 
 
@@ -84,7 +89,6 @@ def costs(country):
     log = "costs.txt"
     
     # Setup
-    this_scratch = scratch / f"costs_{country}"
     targets_in = data / "targets" / f"{country}.tif"
     costs_in = data / "costs_vec" / f"{country}.gpkg"
     costs_out = data / "costs" / f"{country}.tif"
@@ -92,7 +96,6 @@ def costs(country):
     if targets_in.is_file() and costs_in.is_file() and not costs_out.is_file():
         try:
             print("Costs start", country)
-            this_scratch.mkdir(parents=True, exist_ok=True)
             aoi = admin.loc[admin[code] == country]
 
             roads_raster, affine = prepare_roads(costs_in, aoi, targets_in)
@@ -102,7 +105,6 @@ def costs(country):
             msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
-            shutil.rmtree(this_scratch)
             print(msg)
             with open(log, 'a') as f:
                 print(msg, file=f)
@@ -144,7 +146,6 @@ def vector(country):
     log = "vector.txt"
 
     # Setup
-    this_scratch = scratch / f"vector_{country}"
     guess_in = data / "guess" / f"{country}.tif"
     guess_vec_out = data / "guess_vec" / f"{country}.gpkg"
 
@@ -159,20 +160,63 @@ def vector(country):
             msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
-            shutil.rmtree(this_scratch)
             print(msg)
             with open(log, "a") as f:
                 print(msg, file=f)
 
 
 def access(country):
-    print('access', country)
+    log = "access.txt"
+
+    # Setup
+    targets_in = data / "targets" / f"{country}.tif"
+    pop_elec_out = data / "pop_elec" / f"{country}.tif"
+
+    if targets_in.is_file() and not pop_elec_out.is_file():
+        try:
+            print("Access start", country)
+            
+            access_this = access_rates.loc[access_rates[code] == country]
+            access_this = access_this[["total", "urban", "rural"]].iloc[0].to_dict()
+            
+            pop, urban, ntl, targets, affine, crs = regularise(country, aoi, pop_in, urban_in, ntl_in, targets_in)
+            pop_elec, access_model_total = estimate(pop, urban, ntl, targets, access)
+            save_raster(pop_elec_out, pop_elec, affine, crs)
+            
+            msg = f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
+        except Exception as e:
+            msg = f"Failed {country} -- {e}"
+        finally:
+            print(msg)
+            with open(log, "a") as f:
+                print(msg, file=f)
 
 
 def local(country):
-    print('local', country)
+    log = "local.txt"
 
+    pop_elec_in = data / "pop_elec" / f"{country}.tif"
+    lv_out = data / "lv" / f"{country}.tif"
 
+    if pop_elec_in.is_file() and not costs_out.is_file():
+        try:
+            print("Local start", country)
+            
+            pop_elec_rd = rasterio.open(pop_elec_in)
+            pop_elec = pop_elec_rd.read(1)
+            affine = pop_elec_rd.transform
+            crs = pop_elec_rd.transform
+
+            costs = apply_lv_length(pop_elec)
+            save_raster(costs_out, costs, affine, crs)
+
+            msg = f"Done {country}"
+        except Exception as e:
+            msg = f"Failed {country} -- {e}"
+        finally:
+            print(msg)
+            with open(log, "a") as f:
+                print(msg, file=f)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
