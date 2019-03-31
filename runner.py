@@ -30,7 +30,7 @@ scratch = data / 'scratch'
 def spawn(tool):
     countries = admin[code].tolist()
 
-    p = Pool(processes=32)
+    p = Pool(processes=16)
     p.map(tool, countries)
 
 
@@ -79,11 +79,11 @@ def targets(country):
 
 def costs(country):
     log = "costs.txt"
-
+    
     # Setup
     this_scratch = scratch / f"costs_{country}"
     targets_in = data / "targets" / f"{country}.tif"
-    costs_in = data / "costs_vec" / f"{country}.tif"
+    costs_in = data / "costs_vec" / f"{country}.gpkg"
     costs_out = data / "costs" / f"{country}.tif"
 
     if targets_in.is_file() and costs_in.is_file() and not costs_out.is_file():
@@ -96,7 +96,7 @@ def costs(country):
             save_raster(costs_out, roads_raster, affine)
             msg = f"Done {country}"
         except Exception as e:
-            msg = f"Failed {country} -- e"
+            msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             shutil.rmtree(this_scratch)
@@ -106,7 +106,34 @@ def costs(country):
 
 
 def dijk(country):
-    print('dijk', country)
+    log = 'dijk.txt'
+
+    # Setup
+    this_scratch = scratch / f"dijk_{country}"
+    targets_in = data / "targets" / f"{country}.tif"
+    costs_in = data / "costs" / f"{country}.tif"
+    guess_out = data / "guess" / f"{country}.tif"
+
+    if targets_in.is_file() and costs_in.is_file() and not guess_out.is_file():
+        try:
+            print("Dijk start", country)
+            this_scratch.mkdir(parents=True, exist_ok=True)
+
+            targets, costs, start, affine = get_targets_costs(targets_in, costs_in)
+            dist = optimise(targets, costs, start, silent=True)
+            save_raster(dist_out, dist, affine)
+            guess, affine = threshold(dist_out)
+            guess_skel = thin(guess)
+            save_raster(guess_out, guess_skel, affine)
+            msg = f"Done {country}"
+        except Exception as e:
+            msg = f"Failed {country} -- {e}"
+        finally:
+            # Clean up
+            shutil.rmtree(this_scratch)
+            print(msg)
+            with open(log, 'a') as f:
+                print(msg, file=f)
 
 
 def vector(country):
