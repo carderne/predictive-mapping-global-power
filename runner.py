@@ -30,7 +30,7 @@ scratch = data / 'scratch'
 def spawn(tool):
     countries = admin[code].tolist()
 
-    p = Pool(processes=16)
+    p = Pool(processes=32)
     p.map(tool, countries)
 
 
@@ -110,6 +110,7 @@ def dijk(country):
 
     # Setup
     this_scratch = scratch / f"dijk_{country}"
+    dist_out = this_scratch / 'dist.tif'
     targets_in = data / "targets" / f"{country}.tif"
     costs_in = data / "costs" / f"{country}.tif"
     guess_out = data / "guess" / f"{country}.tif"
@@ -137,7 +138,28 @@ def dijk(country):
 
 
 def vector(country):
-    print('vector', country)
+    log = "vector.txt"
+
+    # Setup
+    this_scratch = scratch / f"vector_{country}"
+    guess_in = data / "guess" / f"{country}.tif"
+    guess_vec_out = data / "guess_vec" / f"{country}.tif"
+
+    if guess_in.is_file() and not guess_vec_out.is_file():
+        try:
+            print("Vec start", country)
+
+            guess_gdf = raster_to_lines(guess_in)
+            guess_gdf.to_file(guess_vec_out, driver='GPKG')
+            msg = f"Done {country}"
+        except Exception as e:
+            msg = f"Failed {country} -- {e}"
+        finally:
+            # Clean up
+            shutil.rmtree(this_scratch)
+            print(msg)
+            with open(log, "a") as f:
+                print(msg, file=f)
 
 
 def access(country):
