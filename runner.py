@@ -165,7 +165,7 @@ def vector(country):
                 print(msg, file=f)
 
 
-def access(country):
+def pop_elec(country):
     log = "access.txt"
 
     # Setup
@@ -176,10 +176,10 @@ def access(country):
         try:
             print("Access start", country)
             
-            access_this = access_rates.loc[access_rates[code] == country]
-            access_this = access_this[["total", "urban", "rural"]].iloc[0].to_dict()
+            access = access_rates.loc[access_rates[code] == country][["total", "urban", "rural"]].iloc[0].to_dict()
+            aoi = admin.loc[admin[code] == country]
             
-            pop, urban, ntl, targets, affine, crs = regularise(country, aoi, pop_in, urban_in, ntl_in, targets_in)
+            pop, urban, ntl, targets, affine, crs = regularise(country, aoi, pop_in, urban_in, ntl_ann_in, targets_in)
             pop_elec, access_model_total = estimate(pop, urban, ntl, targets, access)
             save_raster(pop_elec_out, pop_elec, affine, crs)
             
@@ -228,7 +228,7 @@ if __name__ == "__main__":
             'costs': costs,
             'dijk': dijk,
             'vector': vector,
-            'access': access,
+            'pop_elec': pop_elec,
             'local': local
     }
 

@@ -84,6 +84,17 @@ All QGIS.
 5. rasterize same as above
 
 ## MV
+### Underground/overground mask
+1. Filter `ne_50m_admin0_access.gpkg` with `total==1` to get only countries with 100% access.
+2. Use to clip urb.tif:
+    ```
+    gdalwarp -cutline ~/data/admin/ne_50m_admin0_access100.gpkg ~/data/pop/urb.tif ~/data/pop/urb_only100.tif
+    ```
+3. Raster calculator result keeping only >=3:
+    ```
+    gdal_calc.py -A ~/data/pop/urb_only100.tif --outfile=~/data/pop/underground_mask.tif --calc="A>=3" --NoDataValue=0
+    ```
+
 ### To get single gpkg
 1. Use merge_lots.sh
 
