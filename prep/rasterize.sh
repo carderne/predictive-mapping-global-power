@@ -7,8 +7,14 @@ dir=$(dirname $0)
 echo $dir
 
 for f in $1/*; do
-    name=$(echo $f | sed -r "s/.+\/(.+)\..+/\1/");
+	if [[ "merged" == *$f* ]]; then
+		continue;
+	fi
+	name=$(echo $f | sed -r "s/.+\/(.+)\..+/\1/");
 	targ=~/data/targets/$name.tif;
-	gdal_rasterize -at -burn 1 -a_nodata 0 -init 0 -ts $($dir/getres.sh $targ) -te $($dir/getextents.sh $targ) $f $2/$name.tif
+	out=$2/$name.tif
+	if [ ! -f $out ]; then
+		gdal_rasterize -at -burn 1 -a_nodata 0 -init 0 -ts $($dir/getres.sh $targ) -te $($dir/getextents.sh $targ) $f $2/$name.tif
+	fi
 done
 
