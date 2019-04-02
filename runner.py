@@ -31,12 +31,15 @@ admin = gpd.read_file(admin_in)
 access_rates = pd.read_csv(access_in)
 scratch = data / 'scratch'
 
+exclude = ['KIR', 'FJI', 'ATC', 'PCN', 'HMD', 'SGS']
+
 
 def spawn(tool, country):
     if country is not None:
         countries = [country]
     else:
         countries = admin[code].tolist()
+        countries = list(set(countries) - set(exclude))
 
     p = Pool(processes=32)
     p.map(tool, countries)
