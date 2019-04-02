@@ -31,7 +31,7 @@ admin = gpd.read_file(admin_in)
 access_rates = pd.read_csv(access_in)
 scratch = data / 'scratch'
 
-exclude = ['KIR', 'FJI', 'ATC', 'PCN', 'HMD', 'SGS']
+exclude = ['KIR', 'FJI', 'ATC', 'PCN', 'HMD', 'SGS', 'KAS', 'ATF']
 
 
 def spawn(tool, country):

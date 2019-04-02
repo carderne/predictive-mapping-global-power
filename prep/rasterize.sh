@@ -7,7 +7,7 @@ dir=$(dirname $0)
 echo $dir
 
 for f in $1/*; do
-	if [[ "merged" == *$f* ]]; then
+	if [[ $f == *"merged"* ]]; then
 		continue;
 	fi
 	name=$(echo $f | sed -r "s/.+\/(.+)\..+/\1/");

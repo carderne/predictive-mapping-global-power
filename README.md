@@ -4,7 +4,7 @@
 - LV calc should take into account demand
 - Separate OSM HV and MV
 - Add 'debug?' parameter to noisy functions
-- Optimise (numba, what else?)
+- Handle Alaska, Hawaii, Prussia, French Guiana, islands
 
 ## Difficult countries
 India
@@ -63,11 +63,19 @@ Antarctica
 
 # Modelling
 ## Gridfinder
+1. Run `runner.py targets`
+2. Run `runner.py costs`
+3. Run `runner.py dijk`
+4. Create grid raster mask: `rasterize.sh data/grid_vec data/grid`
+5. Subtract mask from guess:
+    ```
+
+    ```
+6. Run `runner.py vector`
 
 ## Access-Estimator
-1. Run access.py (based on access_rates.py)
-2. Run local.py (based on lv_length.py)
-2. modify LV formula to return length, then static multiply to get cost
+1. Run `runner.py pop_elec`
+2. Run `runner.py local`
 
 # Processing results
 ## HV
