@@ -201,17 +201,17 @@ def local(country):
     pop_elec_in = data / "pop_elec" / f"{country}.tif"
     lv_out = data / "lv" / f"{country}.tif"
 
-    if pop_elec_in.is_file() and not costs_out.is_file():
+    if pop_elec_in.is_file() and not lv_out.is_file():
         try:
             print("Local start", country)
             
             pop_elec_rd = rasterio.open(pop_elec_in)
             pop_elec = pop_elec_rd.read(1)
             affine = pop_elec_rd.transform
-            crs = pop_elec_rd.transform
+            crs = pop_elec_rd.crs
 
             costs = apply_lv_length(pop_elec)
-            save_raster(costs_out, costs, affine, crs)
+            save_raster(lv_out, costs, affine, crs)
 
             msg = f"Done {country}"
         except Exception as e:
