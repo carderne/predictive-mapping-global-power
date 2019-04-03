@@ -37,7 +37,6 @@ exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF"]
 raise_errors = False
 debug = False
 
-
 def spawn(tool, country):
     if country is not None:
         countries = [country]
@@ -69,30 +68,24 @@ def targets(country):
 
             # Clip NTL rasters and calculate nth percentile values
             clip_rasters(ntl_in, ntl_out, buff)
-            if debug:
-                print("Rasters clipped")
+            if debug: print("Rasters clipped")
             raster_merged, affine = merge_rasters(ntl_out)
-            if debug:
-                print("Merged")
+            if debug: print("Merged")
             save_raster(ntl_merged_out, raster_merged, affine)
-            if debug:
-                print("Saved")
+            if debug: print("Saved")
 
             # Apply filter to NTL
             ntl_filter = create_filter()
             ntl_thresh, affine = prepare_ntl(
                 ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1
             )
-            if debug:
-                print("Prepared")
+            if debug: print("Prepared")
             save_raster(ntl_thresh_out, ntl_thresh, affine)
-            if debug:
-                print("Saved")
+            if debug: print("Saved")
 
             # Clip to actual AOI
             targets, affine, _ = clip_raster(ntl_thresh_out, aoi)
-            if debug:
-                print("Clipped again")
+            if debug: print("Clipped again")
             save_raster(targets_out, targets, affine)
 
             msg = f"Done {country}"
@@ -267,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument("tool")
     parser.add_argument("--country")
     parser.add_argument("-r", action="store_true")
-    parser.add_argu, ent("-d", action="store_true")
+    parser.add_argument("-d", action="store_true")
     args = parser.parse_args()
 
     switch = {
@@ -290,3 +283,4 @@ if __name__ == "__main__":
         debug = True
 
     spawn(func, args.country)
+
