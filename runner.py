@@ -13,25 +13,28 @@ from multiprocessing import Pool
 import pandas as pd
 import geopandas as gpd
 
-sys.path.append('gridfinder')
-sys.path.append('access-estimator')
-from gridfinder import *
-from access_estimator import *
+sys.path.append("gridfinder")
+sys.path.append("access-estimator")
 
-data = Path('data')
-code = 'ADM0_A3'
-admin_in = data / 'admin' / 'ne_50m_admin0.gpkg'
-ntl_in = data / 'ntl' / 'monthly'
-pop_in = data / 'pop' / 'ghs.tif'
-urban_in = data / 'pop' / 'urb.tif'
-access_in = data / 'pop' / 'countries.csv'
-ntl_ann_in = data / 'ntl' / 'annual' / 'world.tif'
+from access_estimator import *
+from gridfinder import *
+
+data = Path("data")
+code = "ADM0_A3"
+admin_in = data / "admin" / "ne_50m_admin0.gpkg"
+ntl_in = data / "ntl" / "monthly"
+pop_in = data / "pop" / "ghs.tif"
+urban_in = data / "pop" / "urb.tif"
+access_in = data / "pop" / "countries.csv"
+ntl_ann_in = data / "ntl" / "annual" / "world.tif"
 
 admin = gpd.read_file(admin_in)
 access_rates = pd.read_csv(access_in)
-scratch = data / 'scratch'
+scratch = data / "scratch"
 
-exclude = ['KIR', 'FJI', 'ATC', 'PCN', 'HMD', 'SGS', 'KAS', 'ATF']
+exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF"]
+
+raise_errors = False
 
 
 def spawn(tool, country):
@@ -46,18 +49,18 @@ def spawn(tool, country):
 
 
 def targets(country):
-    log = 'targets.txt'
+    log = "targets.txt"
 
     # Setup
-    this_scratch = scratch / f'targets_{country}'
-    ntl_out = this_scratch / 'ntl'
-    ntl_merged_out = this_scratch / 'ntl_merged.tif'
-    ntl_thresh_out = this_scratch / 'ntl_thresh.tif'
-    targets_out = data / 'targets' / f'{country}.tif'
+    this_scratch = scratch / f"targets_{country}"
+    ntl_out = this_scratch / "ntl"
+    ntl_merged_out = this_scratch / "ntl_merged.tif"
+    ntl_thresh_out = this_scratch / "ntl_thresh.tif"
+    targets_out = data / "targets" / f"{country}.tif"
 
     if not targets_out.is_file():
         try:
-            print('Targets start', country)
+            print("Targets start", country)
             this_scratch.mkdir(parents=True, exist_ok=True)
             aoi = admin.loc[admin[code] == country]
             buff = aoi.copy()
@@ -70,27 +73,32 @@ def targets(country):
 
             # Apply filter to NTL
             ntl_filter = create_filter()
-            ntl_thresh, affine = prepare_ntl(ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1)
+            ntl_thresh, affine = prepare_ntl(
+                ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1
+            )
             save_raster(ntl_thresh_out, ntl_thresh, affine)
 
             # Clip to actual AOI
             targets, affine, _ = clip_raster(ntl_thresh_out, aoi)
             save_raster(targets_out, targets, affine)
 
-            msg = f'Done {country}'
+            msg = f"Done {country}"
         except Exception as e:
-            msg = f'Failed {country} -- {e}'
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             shutil.rmtree(this_scratch)
             print(msg)
-            with open(log, 'a') as f:
+            with open(log, "a") as f:
                 print(msg, file=f)
 
 
 def costs(country):
     log = "costs.txt"
-    
+
     # Setup
     targets_in = data / "targets" / f"{country}.tif"
     costs_in = data / "costs_vec" / f"{country}.gpkg"
@@ -105,20 +113,23 @@ def costs(country):
             save_raster(costs_out, roads_raster, affine)
             msg = f"Done {country}"
         except Exception as e:
-            msg = f"Failed {country} -- {e}"
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             print(msg)
-            with open(log, 'a') as f:
+            with open(log, "a") as f:
                 print(msg, file=f)
 
 
 def dijk(country):
-    log = 'dijk.txt'
+    log = "dijk.txt"
 
     # Setup
     this_scratch = scratch / f"dijk_{country}"
-    dist_out = this_scratch / 'dist.tif'
+    dist_out = this_scratch / "dist.tif"
     targets_in = data / "targets" / f"{country}.tif"
     costs_in = data / "costs" / f"{country}.tif"
     guess_out = data / "guess" / f"{country}.tif"
@@ -136,12 +147,15 @@ def dijk(country):
             save_raster(guess_out, guess_skel, affine)
             msg = f"Done {country}"
         except Exception as e:
-            msg = f"Failed {country} -- {e}"
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             shutil.rmtree(this_scratch)
             print(msg)
-            with open(log, 'a') as f:
+            with open(log, "a") as f:
                 print(msg, file=f)
 
 
@@ -157,10 +171,13 @@ def vector(country):
             print("Vec start", country)
 
             guess_gdf = raster_to_lines(guess_in)
-            guess_gdf.to_file(guess_vec_out, driver='GPKG')
+            guess_gdf.to_file(guess_vec_out, driver="GPKG")
             msg = f"Done {country}"
         except Exception as e:
-            msg = f"Failed {country} -- {e}"
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             print(msg)
@@ -178,17 +195,30 @@ def pop_elec(country):
     if targets_in.is_file() and not pop_elec_out.is_file():
         try:
             print("Access start", country)
-            
-            access = access_rates.loc[access_rates[code] == country][["total", "urban", "rural"]].iloc[0].to_dict()
+
+            access = (
+                access_rates.loc[access_rates[code] == country][
+                    ["total", "urban", "rural"]
+                ]
+                .iloc[0]
+                .to_dict()
+            )
             aoi = admin.loc[admin[code] == country]
-            
-            pop, urban, ntl, targets, affine, crs = regularise(country, aoi, pop_in, urban_in, ntl_ann_in, targets_in)
+
+            pop, urban, ntl, targets, affine, crs = regularise(
+                country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
+            )
             pop_elec, access_model_total = estimate(pop, urban, ntl, targets, access)
             save_raster(pop_elec_out, pop_elec, affine, crs)
-            
-            msg = f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
+
+            msg = (
+                f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
+            )
         except Exception as e:
-            msg = f"Failed {country} -- {e}"
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             print(msg)
             with open(log, "a") as f:
@@ -204,7 +234,7 @@ def local(country):
     if pop_elec_in.is_file() and not lv_out.is_file():
         try:
             print("Local start", country)
-            
+
             pop_elec_rd = rasterio.open(pop_elec_in)
             pop_elec = pop_elec_rd.read(1)
             affine = pop_elec_rd.transform
@@ -215,28 +245,37 @@ def local(country):
 
             msg = f"Done {country}"
         except Exception as e:
-            msg = f"Failed {country} -- {e}"
+            if raise_errors:
+                raise
+            else:
+                msg = f"Failed {country} -- {e}"
         finally:
             print(msg)
             with open(log, "a") as f:
                 print(msg, file=f)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
     parser.add_argument("--country")
+    parser.add_argument("-r", action="store_true")
     args = parser.parse_args()
 
     switch = {
-            'targets': targets,
-            'costs': costs,
-            'dijk': dijk,
-            'vector': vector,
-            'pop_elec': pop_elec,
-            'local': local
+        "targets": targets,
+        "costs": costs,
+        "dijk": dijk,
+        "vector": vector,
+        "pop_elec": pop_elec,
+        "local": local,
     }
 
     func = switch.get(args.tool)
     if func is None:
         sys.exit(f"Option {args.tool} not supported")
+
+    if args.r:
+        raise_errors = True
 
     spawn(func, args.country)
