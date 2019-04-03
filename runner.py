@@ -35,6 +35,7 @@ scratch = data / "scratch"
 exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF"]
 
 raise_errors = False
+debug = False
 
 
 def spawn(tool, country):
@@ -68,26 +69,37 @@ def targets(country):
 
             # Clip NTL rasters and calculate nth percentile values
             clip_rasters(ntl_in, ntl_out, buff)
+            if debug:
+                print("Rasters clipped")
             raster_merged, affine = merge_rasters(ntl_out)
+            if debug:
+                print("Merged")
             save_raster(ntl_merged_out, raster_merged, affine)
+            if debug:
+                print("Saved")
 
             # Apply filter to NTL
             ntl_filter = create_filter()
             ntl_thresh, affine = prepare_ntl(
                 ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1
             )
+            if debug:
+                print("Prepared")
             save_raster(ntl_thresh_out, ntl_thresh, affine)
+            if debug:
+                print("Saved")
 
             # Clip to actual AOI
             targets, affine, _ = clip_raster(ntl_thresh_out, aoi)
+            if debug:
+                print("Clipped again")
             save_raster(targets_out, targets, affine)
 
             msg = f"Done {country}"
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             shutil.rmtree(this_scratch)
@@ -113,10 +125,9 @@ def costs(country):
             save_raster(costs_out, roads_raster, affine)
             msg = f"Done {country}"
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             print(msg)
@@ -147,10 +158,9 @@ def dijk(country):
             save_raster(guess_out, guess_skel, affine)
             msg = f"Done {country}"
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             shutil.rmtree(this_scratch)
@@ -174,10 +184,9 @@ def vector(country):
             guess_gdf.to_file(guess_vec_out, driver="GPKG")
             msg = f"Done {country}"
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             # Clean up
             print(msg)
@@ -215,10 +224,9 @@ def pop_elec(country):
                 f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
             )
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             print(msg)
             with open(log, "a") as f:
@@ -245,10 +253,9 @@ def local(country):
 
             msg = f"Done {country}"
         except Exception as e:
+            msg = f"Failed {country} -- {e}"
             if raise_errors:
                 raise
-            else:
-                msg = f"Failed {country} -- {e}"
         finally:
             print(msg)
             with open(log, "a") as f:
@@ -260,6 +267,7 @@ if __name__ == "__main__":
     parser.add_argument("tool")
     parser.add_argument("--country")
     parser.add_argument("-r", action="store_true")
+    parser.add_argu, ent("-d", action="store_true")
     args = parser.parse_args()
 
     switch = {
@@ -277,5 +285,8 @@ if __name__ == "__main__":
 
     if args.r:
         raise_errors = True
+
+    if args.d:
+        debug = True
 
     spawn(func, args.country)
