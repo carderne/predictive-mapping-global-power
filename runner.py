@@ -278,6 +278,11 @@ if __name__ == "__main__":
     parser.add_argument("-r", action="store_true")  # Whether to raise errors
     parser.add_argument("-d", action="store_true")  # Whether to print debug messages
     parser.add_argument("--targets_dir")
+    parser.add_argument("--costs_dir")
+    parser.add_argument("--guess_dir")
+    parser.add_argument("--vector_dir")
+    parser.add_argument("--pop_elec_dir")
+    parser.add_argument("--local_dir")
     parser.add_argument("--percentile")
     args = parser.parse_args()
 
@@ -302,6 +307,21 @@ if __name__ == "__main__":
 
     if args.targets_dir:
         targets_dir = args.targets_dir
+
+    if args.costs_dir:
+        costs_dir = args.costs_dir
+
+    if args.guess_dir:
+        guess_dir = args.guess_dir
+
+    if args.vector_dir:
+        vector_dir = args.vector_dir
+
+    if args.pop_elec_dir:
+        pop_elec_dir = args.pop_elec_dir
+
+    if args.local_dir:
+        local_dir = args.local_dir
 
     if args.percentile:
         percentile = int(args.percentile)
