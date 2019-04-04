@@ -2,7 +2,6 @@
 - Need to see if works okay with pre-merged raster
 - Isolated networks
 - LV calc should take into account demand
-- Separate OSM HV and MV
 - Add 'debug?' parameter to noisy functions
 - Handle Alaska, Hawaii, Prussia, French Guiana, islands
 

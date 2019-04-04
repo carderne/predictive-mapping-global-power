@@ -14,7 +14,9 @@ for f in $1/*; do
 	targ=~/data/targets/$name.tif;
 	out=$2/$name.tif
 	if [ ! -f $out ]; then
-		gdal_rasterize -at -burn 1 -a_nodata 0 -init 0 -ts $($dir/getres.sh $targ) -te $($dir/getextents.sh $targ) $f $2/$name.tif
+		echo "Doing $name"
+        # -at (ALL_TOUCHED) breaks with IRN, USA, ZMB
+		gdal_rasterize -burn 1 -a_nodata 0 -init 0 -ts $($dir/getres.sh $targ) -te $($dir/getextents.sh $targ) $f $2/$name.tif
 	fi
 done
 
