@@ -277,8 +277,8 @@ if __name__ == "__main__":
     parser.add_argument("--country")
     parser.add_argument("-r", action="store_true")  # Whether to raise errors
     parser.add_argument("-d", action="store_true")  # Whether to print debug messages
-    parser.add_argument("targets_dir")
-    parser.add_argument("percentile")
+    parser.add_argument("--targets_dir")
+    parser.add_argument("--percentile")
     args = parser.parse_args()
 
     switch = {
