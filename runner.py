@@ -35,6 +35,8 @@ vector_dir = "guess_vec"
 pop_elec_dir = "pop_elec"
 local_dir = "lv"
 
+percentile = 70
+
 admin = gpd.read_file(admin_in)
 access_rates = pd.read_csv(access_in)
 scratch = data / "scratch"
@@ -78,7 +80,7 @@ def targets(country):
             clip_rasters(ntl_in, ntl_out, buff)
             if debug:
                 print("Rasters clipped")
-            raster_merged, affine = merge_rasters(ntl_out)
+            raster_merged, affine = merge_rasters(ntl_out, percentile=percentile)
             if debug:
                 print("Merged")
             save_raster(ntl_merged_out, raster_merged, affine)
@@ -276,6 +278,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", action="store_true")  # Whether to raise errors
     parser.add_argument("-d", action="store_true")  # Whether to print debug messages
     parser.add_argument("targets_dir")
+    parser.add_argument("percentile")
     args = parser.parse_args()
 
     switch = {
@@ -299,5 +302,8 @@ if __name__ == "__main__":
 
     if args.targets_dir:
         targets_dir = args.targets_dir
+
+    if args.percentile:
+        percentile = int(args.percentile)
 
     spawn(func, args.country)
