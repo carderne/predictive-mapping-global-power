@@ -28,14 +28,22 @@ urban_in = data / "pop" / "urb.tif"
 access_in = data / "pop" / "countries.csv"
 ntl_ann_in = data / "ntl" / "annual" / "world.tif"
 
+targets_dir = "targets"
+costs_dir = "costs"
+guess_dir = "guess"
+vector_dir = "guess_vec"
+pop_elec_dir = "pop_elec"
+local_dir = "lv"
+
 admin = gpd.read_file(admin_in)
 access_rates = pd.read_csv(access_in)
 scratch = data / "scratch"
 
-exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF"]
+exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF", "FSM"]
 
 raise_errors = False
 debug = False
+
 
 def spawn(tool, country):
     if country is not None:
@@ -56,7 +64,7 @@ def targets(country):
     ntl_out = this_scratch / "ntl"
     ntl_merged_out = this_scratch / "ntl_merged.tif"
     ntl_thresh_out = this_scratch / "ntl_thresh.tif"
-    targets_out = data / "targets" / f"{country}.tif"
+    targets_out = data / targets_dir / f"{country}.tif"
 
     if not targets_out.is_file():
         try:
@@ -68,24 +76,30 @@ def targets(country):
 
             # Clip NTL rasters and calculate nth percentile values
             clip_rasters(ntl_in, ntl_out, buff)
-            if debug: print("Rasters clipped")
+            if debug:
+                print("Rasters clipped")
             raster_merged, affine = merge_rasters(ntl_out)
-            if debug: print("Merged")
+            if debug:
+                print("Merged")
             save_raster(ntl_merged_out, raster_merged, affine)
-            if debug: print("Saved")
+            if debug:
+                print("Saved")
 
             # Apply filter to NTL
             ntl_filter = create_filter()
             ntl_thresh, affine = prepare_ntl(
                 ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1
             )
-            if debug: print("Prepared")
+            if debug:
+                print("Prepared")
             save_raster(ntl_thresh_out, ntl_thresh, affine)
-            if debug: print("Saved")
+            if debug:
+                print("Saved")
 
             # Clip to actual AOI
             targets, affine, _ = clip_raster(ntl_thresh_out, aoi)
-            if debug: print("Clipped again")
+            if debug:
+                print("Clipped again")
             save_raster(targets_out, targets, affine)
 
             msg = f"Done {country}"
@@ -105,9 +119,9 @@ def costs(country):
     log = "costs.txt"
 
     # Setup
-    targets_in = data / "targets" / f"{country}.tif"
+    targets_in = data / targets_dir / f"{country}.tif"
     costs_in = data / "costs_vec" / f"{country}.gpkg"
-    costs_out = data / "costs" / f"{country}.tif"
+    costs_out = data / costs_dir / f"{country}.tif"
 
     if targets_in.is_file() and costs_in.is_file() and not costs_out.is_file():
         try:
@@ -134,9 +148,9 @@ def dijk(country):
     # Setup
     this_scratch = scratch / f"dijk_{country}"
     dist_out = this_scratch / "dist.tif"
-    targets_in = data / "targets" / f"{country}.tif"
-    costs_in = data / "costs" / f"{country}.tif"
-    guess_out = data / "guess" / f"{country}.tif"
+    targets_in = data / targets_dir / f"{country}.tif"
+    costs_in = data / costs_dir / f"{country}.tif"
+    guess_out = data / guess_dir / f"{country}.tif"
 
     if targets_in.is_file() and costs_in.is_file() and not guess_out.is_file():
         try:
@@ -166,8 +180,8 @@ def vector(country):
     log = "vector.txt"
 
     # Setup
-    guess_in = data / "guess" / f"{country}.tif"
-    guess_vec_out = data / "guess_vec" / f"{country}.gpkg"
+    guess_in = data / guess_dir / f"{country}.tif"
+    guess_vec_out = data / vector_dir / f"{country}.gpkg"
 
     if guess_in.is_file() and not guess_vec_out.is_file():
         try:
@@ -191,8 +205,8 @@ def pop_elec(country):
     log = "access.txt"
 
     # Setup
-    targets_in = data / "targets" / f"{country}.tif"
-    pop_elec_out = data / "pop_elec" / f"{country}.tif"
+    targets_in = data / targets_dir / f"{country}.tif"
+    pop_elec_out = data / pop_elec_dir / f"{country}.tif"
 
     if targets_in.is_file() and not pop_elec_out.is_file():
         try:
@@ -229,8 +243,8 @@ def pop_elec(country):
 def local(country):
     log = "local.txt"
 
-    pop_elec_in = data / "pop_elec" / f"{country}.tif"
-    lv_out = data / "lv" / f"{country}.tif"
+    pop_elec_in = data / pop_elec_dir / f"{country}.tif"
+    lv_out = data / local_dir / f"{country}.tif"
 
     if pop_elec_in.is_file() and not lv_out.is_file():
         try:
@@ -259,8 +273,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
     parser.add_argument("--country")
-    parser.add_argument("-r", action="store_true")
-    parser.add_argument("-d", action="store_true")
+    parser.add_argument("-r", action="store_true")  # Whether to raise errors
+    parser.add_argument("-d", action="store_true")  # Whether to print debug messages
+    parser.add_argument("targets_dir")
     args = parser.parse_args()
 
     switch = {
@@ -282,5 +297,7 @@ if __name__ == "__main__":
     if args.d:
         debug = True
 
-    spawn(func, args.country)
+    if args.targets_dir:
+        targets_dir = args.targets_dir
 
+    spawn(func, args.country)
