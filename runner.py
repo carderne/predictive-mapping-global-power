@@ -47,10 +47,8 @@ raise_errors = False
 debug = False
 
 
-def spawn(tool, country):
-    if country is not None:
-        countries = [country]
-    else:
+def spawn(tool, countries):
+    if countries is None:
         countries = admin[code].tolist()
         countries = list(set(countries) - set(exclude))
 
@@ -274,7 +272,7 @@ def local(country):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("tool")
-    parser.add_argument("--country")
+    parser.add_argument("--countries")
     parser.add_argument("-r", action="store_true")  # Whether to raise errors
     parser.add_argument("-d", action="store_true")  # Whether to print debug messages
     parser.add_argument("--targets_dir")
@@ -298,6 +296,14 @@ if __name__ == "__main__":
     func = switch.get(args.tool)
     if func is None:
         sys.exit(f"Option {args.tool} not supported")
+
+    if args.countries:
+        if "," in args.countries:
+            countries = args.countries.split(",")
+        else:
+            countries = [args.countries]
+    else:
+        countries = None
 
     if args.r:
         raise_errors = True
@@ -326,4 +332,4 @@ if __name__ == "__main__":
     if args.percentile:
         percentile = int(args.percentile)
 
-    spawn(func, args.country)
+    spawn(func, countries)
