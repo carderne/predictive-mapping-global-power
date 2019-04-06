@@ -3,21 +3,6 @@
 - Isolated networks
 - LV calc should take into account demand
 - Add 'debug?' parameter to noisy functions
-- Handle Alaska, Hawaii, Prussia, French Guiana, islands
-
-## Difficult countries
-India
-France
-Russia (lost stuff over date line)
-Canada (lost the islands)
-United States of America (lost some AK islands)
-Brazil
-Australia
-China
-Fiji
-French Southern and Antarctic Lands
-Greenland
-Antarctica
 
 # Preparation
 ## Sources
@@ -150,3 +135,32 @@ Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 - merge: `ogrmerge.py -f GPKG -o ../merged1.gpkg *.gpkg`
 - compress: `gdal_translate -of GTiff -co "COMPRESS=LZW" -co "TILED=YES" Kenya.tif kcomp.tif`
 - tiling: `for i in *; do gdal_retile.py -ps 10000 10000 -targetDir ../tiled $i; done`
+-
+- # Admin modifications
+### Dropped
+KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL
+
+### Trimmed
+USA (W of date line, Hawaii, islands)
+RUS (E of date line, islands)
+CAN (northern islands)
+ECU (Galapagos)
+CHL (Easter Island)
+MEX (islands)
+ESP (Canary)
+PRT (Madeira, Azores)
+NOR (islands)
+IND (islands)
+FRA (islands)
+NLD (islands)
+AUS (islands)
+NZL (islands)
+
+### Split
+USA (USA, ALK)
+FRA (FRA, GUI)
+RUS (RUS, PRU, RNW, RUE, SAK, RUN, RUW)
+AUS (AUW, AUE, TAS)
+CAN (CNF, CNN, CAQ, CAB, CAS)
+BRA (BRA, BAN)
+

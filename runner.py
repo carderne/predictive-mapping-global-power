@@ -25,7 +25,6 @@ admin_in = data / "admin" / "ne_50m_admin0.gpkg"
 ntl_in = data / "ntl" / "monthly"
 pop_in = data / "pop" / "ghs.tif"
 urban_in = data / "pop" / "urb.tif"
-access_in = data / "pop" / "countries.csv"
 ntl_ann_in = data / "ntl" / "annual" / "world.tif"
 
 targets_dir = "targets"
@@ -38,7 +37,6 @@ local_dir = "lv"
 percentile = 70
 
 admin = gpd.read_file(admin_in)
-access_rates = pd.read_csv(access_in)
 scratch = data / "scratch"
 
 exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF", "FSM"]
@@ -212,14 +210,8 @@ def pop_elec(country):
         try:
             print("Access start", country)
 
-            access = (
-                access_rates.loc[access_rates[code] == country][
-                    ["total", "urban", "rural"]
-                ]
-                .iloc[0]
-                .to_dict()
-            )
             aoi = admin.loc[admin[code] == country]
+            access = (aoi[["total", "urban", "rural"]].iloc[0].to_dict())
 
             pop, urban, ntl, targets, affine, crs = regularise(
                 country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
