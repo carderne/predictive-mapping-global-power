@@ -4,6 +4,7 @@
 Script to control running all energy-infra algorithms.
 """
 
+import os
 import sys
 import argparse
 import shutil
@@ -19,9 +20,10 @@ sys.path.append("access-estimator")
 from access_estimator import *
 from gridfinder import *
 
+script_dir = Path(os.path.dirname(__file__))
 data = Path("data")
 code = "ADM0_A3"
-admin_in = data / "admin" / "ne_50m_admin0.gpkg"
+admin_in = script_dir / "data" / "ne_50m_admin0.gpkg"
 ntl_in = data / "ntl" / "monthly"
 pop_in = data / "pop" / "ghs.tif"
 urban_in = data / "pop" / "urb.tif"

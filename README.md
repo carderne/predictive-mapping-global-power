@@ -98,7 +98,7 @@ All QGIS.
 
 2. Merge
     ```
-    gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -o mv_binary.tif nulled/*.tif
+    gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -ot Byte -n 0 -a_nodata 0 -o mv_binary.tif nulled/*.tif
     ```
 
 3. Use HV buffer and filter outside
@@ -138,7 +138,7 @@ Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 -
 - # Admin modifications
 ### Dropped
-KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL
+KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL NIU
 
 ### Trimmed
 USA (W of date line, Hawaii, islands)
