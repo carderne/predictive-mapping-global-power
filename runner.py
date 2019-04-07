@@ -37,6 +37,7 @@ pop_elec_dir = "pop_elec"
 local_dir = "lv"
 
 percentile = 70
+ntl_threshold=0.1
 
 admin = gpd.read_file(admin_in)
 scratch = data / "scratch"
@@ -88,7 +89,11 @@ def targets(country):
             # Apply filter to NTL
             ntl_filter = create_filter()
             ntl_thresh, affine = prepare_ntl(
-                ntl_merged_out, buff, ntl_filter=ntl_filter, upsample_by=1
+                ntl_merged_out,
+                buff,
+                ntl_filter=ntl_filter,
+                upsample_by=1,
+                threshold=ntl_threshold,
             )
             if debug:
                 print("Prepared")
@@ -213,7 +218,7 @@ def pop_elec(country):
             print("Access start", country)
 
             aoi = admin.loc[admin[code] == country]
-            access = (aoi[["total", "urban", "rural"]].iloc[0].to_dict())
+            access = aoi[["total", "urban", "rural"]].iloc[0].to_dict()
 
             pop, urban, ntl, targets, affine, crs = regularise(
                 country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
@@ -276,6 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("--pop_elec_dir")
     parser.add_argument("--local_dir")
     parser.add_argument("--percentile")
+    parser.add_argument("--ntl_threshold")
     args = parser.parse_args()
 
     switch = {
@@ -326,4 +332,8 @@ if __name__ == "__main__":
     if args.percentile:
         percentile = int(args.percentile)
 
+    if args.ntl_threshold:
+        ntl_threshold = float(args.ntl_threshold)
+
     spawn(func, countries)
+
