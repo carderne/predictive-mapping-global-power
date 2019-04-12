@@ -4,6 +4,7 @@
 Script to control running all energy-infra algorithms.
 """
 
+import os
 import sys
 import argparse
 import shutil
@@ -13,10 +14,9 @@ import yaml
 
 import geopandas as gpd
 
-with open("config.yml", "r") as ymlfile:
+script_dir = Path(os.path.dirname(__file__))
+with open(script_dir / "config.yml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-
-print(cfg)
 
 sys.path.append(str(Path(cfg["libraries"]["gridfinder"]).expanduser()))
 sys.path.append(str(Path(cfg["libraries"]["access"]).expanduser()))

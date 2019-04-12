@@ -3,7 +3,7 @@ libraries:
   access: ~/Code/access-estimator/
 
 inputs:
-  admin: data/ne_50m_admin0.gpkg
+  admin: ~/Code/energy-infra/data/ne_50m_admin0.gpkg
   admin_code: ADM0_A3
   ntl_monthly: ~/data/ntl/monthly
   ntl_annual: ~/data/ntl/annual/world.tif
