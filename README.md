@@ -51,7 +51,7 @@
 
 ## Land COver
 1. Use `clip_to_countries.py` to clip to each country outline.
-2. Use `filter_targets.sh` to filter ice from targets.
+2. Use `filter_targets.sh` to filter ice from targets (value == 220).
 
 
 # Modelling
