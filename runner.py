@@ -44,6 +44,7 @@ local_dir = cfg["outputs"]["local"]
 
 percentile = cfg["options"]["percentile"]
 ntl_threshold = cfg["options"]["ntl_threshold"]
+threads = cfg["options"]["threads"]
 raise_errors = False
 debug = False
 
@@ -54,7 +55,7 @@ def spawn(tool, countries):
     if countries is None:
         countries = admin[code].tolist()
 
-    p = Pool(processes=32)
+    p = Pool(processes=threads)
     p.map(tool, countries)
 
 

@@ -23,3 +23,4 @@ outputs:
 options:
   percentile: 70
   ntl_threshold: 0.1
+  threads: 2
