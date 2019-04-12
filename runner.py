@@ -1,4 +1,4 @@
-# runner.py
+#!/usr/bin/env python
 
 """
 Script to control running all energy-infra algorithms.

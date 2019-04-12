@@ -1,10 +1,6 @@
 # Issues
-- Need to see if works okay with pre-merged raster
 - Isolated networks
 - LV calc should take into account demand
-- Add 'debug?' parameter to noisy functions
-- Use LandScan/WorldPop for LV in developing countries
-- Explore snowy areas to see if affects liked Southern Alps
 - Filter based on slope/altitude? Pre-filter NTL, set higher cost, post-filter again
 - Post-filter oceans or split islands
 - Drop outside of 60deg N/S
@@ -19,6 +15,7 @@
 6. Simple admin (NE_50m_admin0) from: http://naturalearthdata.com/
 7. LandScan population raster
 8. DEM from HydroSheds
+9. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
 
 ## VIIRS
 1. Use dl.sh to download
@@ -51,6 +48,11 @@
 1. Use o5m output from step (2) in [Roads](Roads)
 2. Use extract_osm_grid.py
 3. Use merge_lots.sh
+
+## Land COver
+1. Use `clip_to_countries.py` to clip to each country outline.
+2. Use `filter_targets.sh` to filter ice from targets.
+
 
 # Modelling
 ## Gridfinder
