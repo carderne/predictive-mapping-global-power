@@ -1,0 +1,25 @@
+libraries:
+  gridfinder: ~/Code/gridfinder/
+  access: ~/Code/access-estimator/
+
+inputs:
+  admin: data/ne_50m_admin0.gpkg
+  admin_code: ADM0_A3
+  ntl_monthly: ~/data/ntl/monthly
+  ntl_annual: ~/data/ntl/annual/world.tif
+  pop: ~/data/pop/ghs.tif
+  urban: ~/data/pop/urb.tif
+
+outputs:
+  base: ~/data/
+  scratch: ~/data/scratch/
+  targets: targets
+  costs: costs
+  guess: guess
+  vector: guess_vec
+  pop_elec: pop_elec
+  local: lv
+
+options:
+  percentile: 70
+  ntl_threshold: 0.1

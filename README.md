@@ -3,6 +3,11 @@
 - Isolated networks
 - LV calc should take into account demand
 - Add 'debug?' parameter to noisy functions
+- Use LandScan/WorldPop for LV in developing countries
+- Explore snowy areas to see if affects liked Southern Alps
+- Filter based on slope/altitude? Pre-filter NTL, set higher cost, post-filter again
+- Post-filter oceans or split islands
+- Drop outside of 60deg N/S
 
 # Preparation
 ## Sources
@@ -12,6 +17,8 @@
 4. VIIRS from: https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html (use noaa_scrape.py to get all monthly files)
 5. GADM from: https://gadm.org/
 6. Simple admin (NE_50m_admin0) from: http://naturalearthdata.com/
+7. LandScan population raster
+8. DEM from HydroSheds
 
 ## VIIRS
 1. Use dl.sh to download

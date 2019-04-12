@@ -4,54 +4,55 @@
 Script to control running all energy-infra algorithms.
 """
 
-import os
 import sys
 import argparse
 import shutil
 from pathlib import Path
 from multiprocessing import Pool
+import yaml
 
-import pandas as pd
 import geopandas as gpd
 
-sys.path.append("gridfinder")
-sys.path.append("access-estimator")
+with open("config.yml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+print(cfg)
+
+sys.path.append(str(Path(cfg["libraries"]["gridfinder"]).expanduser()))
+sys.path.append(str(Path(cfg["libraries"]["access"]).expanduser()))
 
 from access_estimator import *
 from gridfinder import *
 
-script_dir = Path(os.path.dirname(__file__))
-data = Path("data")
-code = "ADM0_A3"
-admin_in = script_dir / "data" / "ne_50m_admin0.gpkg"
-ntl_in = data / "ntl" / "monthly"
-pop_in = data / "pop" / "ghs.tif"
-urban_in = data / "pop" / "urb.tif"
-ntl_ann_in = data / "ntl" / "annual" / "world.tif"
+admin_in = Path(cfg["inputs"]["admin"]).expanduser()
+code = cfg["inputs"]["admin_code"]
+ntl_in = Path(cfg["inputs"]["ntl_monthly"]).expanduser()
+ntl_ann_in = Path(cfg["inputs"]["ntl_annual"]).expanduser()
+pop_in = Path(cfg["inputs"]["pop"]).expanduser()
+urban_in = Path(cfg["inputs"]["urban"]).expanduser()
+pop_in = Path(cfg["inputs"]["pop"]).expanduser()
 
-targets_dir = "targets"
-costs_dir = "costs"
-guess_dir = "guess"
-vector_dir = "guess_vec"
-pop_elec_dir = "pop_elec"
-local_dir = "lv"
+data = Path(cfg["outputs"]["base"]).expanduser()
+scratch = Path(cfg["outputs"]["scratch"]).expanduser()
 
-percentile = 70
-ntl_threshold=0.1
+targets_dir = cfg["outputs"]["targets"]
+costs_dir = cfg["outputs"]["costs"]
+guess_dir = cfg["outputs"]["guess"]
+vector_dir = cfg["outputs"]["vector"]
+pop_elec_dir = cfg["outputs"]["pop_elec"]
+local_dir = cfg["outputs"]["local"]
 
-admin = gpd.read_file(admin_in)
-scratch = data / "scratch"
-
-exclude = ["KIR", "FJI", "ATC", "PCN", "HMD", "SGS", "KAS", "ATF", "FSM"]
-
+percentile = cfg["options"]["percentile"]
+ntl_threshold = cfg["options"]["ntl_threshold"]
 raise_errors = False
 debug = False
+
+admin = gpd.read_file(admin_in)
 
 
 def spawn(tool, countries):
     if countries is None:
         countries = admin[code].tolist()
-        countries = list(set(countries) - set(exclude))
 
     p = Pool(processes=32)
     p.map(tool, countries)
@@ -336,4 +337,3 @@ if __name__ == "__main__":
         ntl_threshold = float(args.ntl_threshold)
 
     spawn(func, countries)
-
