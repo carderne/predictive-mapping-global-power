@@ -14,16 +14,12 @@ import yaml
 
 import geopandas as gpd
 import rasterio
+import accessestimator as ea
+import gridfinder as gf
 
 script_dir = Path(os.path.dirname(__file__))
 with open(script_dir / "config.yml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-
-sys.path.append(str(Path(cfg["libraries"]["gridfinder"]).expanduser()))
-sys.path.append(str(Path(cfg["libraries"]["access"]).expanduser()))
-
-import access_estimator as ea
-import gridfinder as gf
 
 admin_in = Path(cfg["inputs"]["admin"]).expanduser()
 code = cfg["inputs"]["admin_code"]

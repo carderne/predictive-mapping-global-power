@@ -1,7 +1,3 @@
-libraries:
-  gridfinder: ~/Code/gridfinder/
-  access: ~/Code/access-estimator/
-
 inputs:
   admin: ~/Code/energy-infra/data/ne_50m_admin0.gpkg
   admin_code: ADM0_A3
@@ -23,4 +19,4 @@ outputs:
 options:
   percentile: 70
   ntl_threshold: 0.1
-  threads: 2
+  threads: 7
