@@ -13,6 +13,7 @@ from multiprocessing import Pool
 import yaml
 
 import geopandas as gpd
+import rasterio
 
 script_dir = Path(os.path.dirname(__file__))
 with open(script_dir / "config.yml", "r") as ymlfile:
@@ -21,8 +22,8 @@ with open(script_dir / "config.yml", "r") as ymlfile:
 sys.path.append(str(Path(cfg["libraries"]["gridfinder"]).expanduser()))
 sys.path.append(str(Path(cfg["libraries"]["access"]).expanduser()))
 
-from access_estimator import *
-from gridfinder import *
+import access_estimator as ea
+import gridfinder as gf
 
 admin_in = Path(cfg["inputs"]["admin"]).expanduser()
 code = cfg["inputs"]["admin_code"]
@@ -51,12 +52,44 @@ debug = False
 admin = gpd.read_file(admin_in)
 
 
+def get_dirname(tool):
+    if tool == targets:
+        return targets_dir
+    elif tool == costs:
+        return costs_dir
+    elif tool == dijk:
+        return guess_dir
+    elif tool == vector:
+        return vector_dir
+    elif tool == pop_elec:
+        return pop_elec_dir
+    elif tool == local:
+        return local_dir
+    else:
+        return ValueError(f"{tool} not supported")
+
+
+def get_filename(dirname, country, ext="tif"):
+    return data / dirname / f"{country}.{ext}"
+
+
+def get_filename_auto(tool, country):
+    dirname = get_dirname(tool)
+    ext = "tif"
+    if tool == vector:
+        ext = "gpkg"
+    return get_filename(dirname, country, ext)
+
+
 def spawn(tool, countries):
     if countries is None:
         countries = admin[code].tolist()
 
-    p = Pool(processes=threads)
-    p.map(tool, countries)
+    countries[:] = [c for c in countries if not get_filename_auto(tool, c).is_file()]
+    print("Will process", len(countries), "countries")
+
+    with Pool(processes=threads) as pool:
+        pool.map(tool, countries)
 
 
 def targets(country):
@@ -67,86 +100,84 @@ def targets(country):
     ntl_out = this_scratch / "ntl"
     ntl_merged_out = this_scratch / "ntl_merged.tif"
     ntl_thresh_out = this_scratch / "ntl_thresh.tif"
-    targets_out = data / targets_dir / f"{country}.tif"
+    targets_out = get_filename(targets_dir, country)
 
-    if not targets_out.is_file():
-        try:
-            print("Targets start", country)
-            this_scratch.mkdir(parents=True, exist_ok=True)
-            aoi = admin.loc[admin[code] == country]
-            buff = aoi.copy()
-            buff.geometry = buff.buffer(0.1)
+    try:
+        print("Targets start", country)
+        this_scratch.mkdir(parents=True, exist_ok=True)
+        aoi = admin.loc[admin[code] == country]
+        buff = aoi.copy()
+        buff.geometry = buff.buffer(0.1)
 
-            # Clip NTL rasters and calculate nth percentile values
-            clip_rasters(ntl_in, ntl_out, buff)
-            if debug:
-                print("Rasters clipped")
-            raster_merged, affine = merge_rasters(ntl_out, percentile=percentile)
-            if debug:
-                print("Merged")
-            save_raster(ntl_merged_out, raster_merged, affine)
-            if debug:
-                print("Saved")
+        # Clip NTL rasters and calculate nth percentile values
+        gf.clip_rasters(ntl_in, ntl_out, buff)
+        if debug:
+            print("Rasters clipped")
+        raster_merged, affine = gf.merge_rasters(ntl_out, percentile=percentile)
+        if debug:
+            print("Merged")
+        gf.save_raster(ntl_merged_out, raster_merged, affine)
+        if debug:
+            print("Saved")
 
-            # Apply filter to NTL
-            ntl_filter = create_filter()
-            ntl_thresh, affine = prepare_ntl(
-                ntl_merged_out,
-                buff,
-                ntl_filter=ntl_filter,
-                upsample_by=1,
-                threshold=ntl_threshold,
-            )
-            if debug:
-                print("Prepared")
-            save_raster(ntl_thresh_out, ntl_thresh, affine)
-            if debug:
-                print("Saved")
+        # Apply filter to NTL
+        ntl_filter = gf.create_filter()
+        ntl_thresh, affine = gf.prepare_ntl(
+            ntl_merged_out,
+            buff,
+            ntl_filter=ntl_filter,
+            upsample_by=1,
+            threshold=ntl_threshold,
+        )
+        if debug:
+            print("Prepared")
+        gf.save_raster(ntl_thresh_out, ntl_thresh, affine)
+        if debug:
+            print("Saved")
 
-            # Clip to actual AOI
-            targets, affine, _ = clip_raster(ntl_thresh_out, aoi)
-            if debug:
-                print("Clipped again")
-            save_raster(targets_out, targets, affine)
+        # Clip to actual AOI
+        targets, affine, _ = gf.clip_raster(ntl_thresh_out, aoi)
+        if debug:
+            print("Clipped again")
+        gf.save_raster(targets_out, targets, affine)
 
-            msg = f"Done {country}"
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            # Clean up
-            shutil.rmtree(this_scratch)
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        msg = f"Done {country}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        # Clean up
+        shutil.rmtree(this_scratch)
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 def costs(country):
     log = "costs.txt"
 
     # Setup
-    targets_in = data / targets_dir / f"{country}.tif"
-    costs_in = data / "costs_vec" / f"{country}.gpkg"
-    costs_out = data / costs_dir / f"{country}.tif"
+    targets_in = get_filename(targets_dir, country)
+    costs_in = get_filename("costs_vec", country, ext="gpkg")
+    costs_out = get_filename(costs_dir, country)
 
-    if targets_in.is_file() and costs_in.is_file() and not costs_out.is_file():
-        try:
-            print("Costs start", country)
-            aoi = admin.loc[admin[code] == country]
+    try:
+        print("Costs start", country)
+        aoi = admin.loc[admin[code] == country]
 
-            roads_raster, affine = prepare_roads(costs_in, aoi, targets_in)
-            save_raster(costs_out, roads_raster, affine)
-            msg = f"Done {country}"
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            # Clean up
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        roads_raster, affine = gf.prepare_roads(costs_in, aoi, targets_in)
+        gf.save_raster(costs_out, roads_raster, affine)
+        msg = f"Done {country}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        # Clean up
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 def dijk(country):
@@ -155,119 +186,114 @@ def dijk(country):
     # Setup
     this_scratch = scratch / f"dijk_{country}"
     dist_out = this_scratch / "dist.tif"
-    targets_in = data / targets_dir / f"{country}.tif"
-    costs_in = data / costs_dir / f"{country}.tif"
-    guess_out = data / guess_dir / f"{country}.tif"
+    targets_in = get_filename(targets_dir, country)
+    costs_in = get_filename(costs_dir, country)
+    guess_out = get_filename(guess_dir, country)
 
-    if targets_in.is_file() and costs_in.is_file() and not guess_out.is_file():
-        try:
-            print("Dijk start", country)
-            this_scratch.mkdir(parents=True, exist_ok=True)
+    try:
+        print("Dijk start", country)
+        this_scratch.mkdir(parents=True, exist_ok=True)
 
-            targets, costs, start, affine = get_targets_costs(targets_in, costs_in)
-            dist = optimise(targets, costs, start, silent=True)
-            save_raster(dist_out, dist, affine)
-            guess, affine = threshold(dist_out)
-            guess_skel = thin(guess)
-            save_raster(guess_out, guess_skel, affine)
-            msg = f"Done {country}"
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            # Clean up
-            shutil.rmtree(this_scratch)
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        targets, costs, start, affine = gf.get_targets_costs(targets_in, costs_in)
+        dist = gf.optimise(targets, costs, start, silent=True)
+        gf.save_raster(dist_out, dist, affine)
+        guess, affine = gf.threshold(dist_out)
+        guess_skel = gf.thin(guess)
+        gf.save_raster(guess_out, guess_skel, affine)
+        msg = f"Done {country}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        # Clean up
+        shutil.rmtree(this_scratch)
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 def vector(country):
     log = "vector.txt"
 
     # Setup
-    guess_in = data / guess_dir / f"{country}.tif"
-    guess_vec_out = data / vector_dir / f"{country}.gpkg"
+    guess_in = get_filename(guess_dir, country)
+    guess_vec_out = get_filename(vector_dir, country, ext="gpkg")
 
-    if guess_in.is_file() and not guess_vec_out.is_file():
-        try:
-            print("Vec start", country)
+    try:
+        print("Vec start", country)
 
-            guess_gdf = raster_to_lines(guess_in)
-            guess_gdf.to_file(guess_vec_out, driver="GPKG")
-            msg = f"Done {country}"
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            # Clean up
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        guess_gdf = gf.raster_to_lines(guess_in)
+        guess_gdf.to_file(guess_vec_out, driver="GPKG")
+        msg = f"Done {country}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        # Clean up
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 def pop_elec(country):
     log = "access.txt"
 
     # Setup
-    targets_in = data / targets_dir / f"{country}.tif"
-    pop_elec_out = data / pop_elec_dir / f"{country}.tif"
+    targets_in = get_filename(targets_dir, country)
+    pop_elec_out = get_filename(pop_elec_dir, country)
 
-    if targets_in.is_file() and not pop_elec_out.is_file():
-        try:
-            print("Access start", country)
+    try:
+        print("Access start", country)
 
-            aoi = admin.loc[admin[code] == country]
-            access = aoi[["total", "urban", "rural"]].iloc[0].to_dict()
+        aoi = admin.loc[admin[code] == country]
+        access = aoi[["total", "urban", "rural"]].iloc[0].to_dict()
 
-            pop, urban, ntl, targets, affine, crs = regularise(
-                country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
-            )
-            pop_elec, access_model_total = estimate(pop, urban, ntl, targets, access)
-            save_raster(pop_elec_out, pop_elec, affine, crs)
+        pop, urban, ntl, targets, affine, crs = ea.regularise(
+            country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
+        )
+        pop_elec, access_model_total = ea.estimate(pop, urban, ntl, targets, access)
+        gf.save_raster(pop_elec_out, pop_elec, affine, crs)
 
-            msg = (
-                f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
-            )
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        msg = f"{country},real: {access['total']:.2f},model: {access_model_total:.2f}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 def local(country):
     log = "local.txt"
 
-    pop_elec_in = data / pop_elec_dir / f"{country}.tif"
-    lv_out = data / local_dir / f"{country}.tif"
+    # Setup
+    pop_elec_in = get_filename(pop_elec_dir, country)
+    lv_out = get_filename(local_dir, country)
 
-    if pop_elec_in.is_file() and not lv_out.is_file():
-        try:
-            print("Local start", country)
+    try:
+        print("Local start", country)
 
-            pop_elec_rd = rasterio.open(pop_elec_in)
-            pop_elec = pop_elec_rd.read(1)
-            affine = pop_elec_rd.transform
-            crs = pop_elec_rd.crs
+        pop_elec_rd = rasterio.open(pop_elec_in)
+        pop_elec = pop_elec_rd.read(1)
+        affine = pop_elec_rd.transform
+        crs = pop_elec_rd.crs
 
-            costs = apply_lv_length(pop_elec)
-            save_raster(lv_out, costs, affine, crs)
+        costs = ea.apply_lv_length(pop_elec)
+        gf.save_raster(lv_out, costs, affine, crs)
 
-            msg = f"Done {country}"
-        except Exception as e:
-            msg = f"Failed {country} -- {e}"
-            if raise_errors:
-                raise
-        finally:
-            print(msg)
-            with open(log, "a") as f:
-                print(msg, file=f)
+        msg = f"Done {country}"
+    except Exception as e:
+        msg = f"Failed {country} -- {e}"
+        if raise_errors:
+            raise
+    finally:
+        print(msg)
+        with open(log, "a") as f:
+            print(msg, file=f)
 
 
 if __name__ == "__main__":
