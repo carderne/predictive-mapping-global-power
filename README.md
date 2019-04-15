@@ -51,10 +51,12 @@
 2. Use extract_osm_grid.py
 3. Use merge_lots.sh
 
-## Land COver
+## Filtering on land cover and slope
 1. Use `clip_to_countries.py` to clip to each country outline.
-2. Use `filter_targets.sh` to filter ice from targets (value == 220).
-
+2. Use `filter.py` as follows:
+    ```
+    energy-infra/scripts/filter.py data/targets data/targets_slope -f data/land '<210' -f data/slope '<25'
+    ```
 
 # Modelling
 ## Gridfinder

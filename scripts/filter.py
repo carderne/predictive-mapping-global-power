@@ -21,11 +21,14 @@ def calc(input_dir, output_dir, filters, overwrite=False):
                     file_list += f"-{letter} {filt_file} "
                     calc += f" + A*({letter}{filt[1]})"
                     letter = chr(ord(letter) + 1)
+            
+            if calc == "":
+                calc = "A"
 
             command = (
                 f"gdal_calc.py -A {f} {file_list} --calc='0{calc}' --outfile {outfile}"
             )
-            print(command)
+            print(name, command)
             os.system(command)
 
 
