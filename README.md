@@ -4,6 +4,8 @@
 - Filter based on slope/altitude? Pre-filter NTL, set higher cost, post-filter again
 - Post-filter oceans or split islands
 - Drop outside of 60deg N/S
+- Remove ~50km past HV in some countries
+- Use HV and MV everywhere. Use MV05 in very dense/developed countries. Don't use in other areas/exclude from mountainous?
 
 # Preparation
 ## Sources
@@ -127,7 +129,7 @@ All QGIS.
 
 ## LV
 Output from model is km per cell.
-1. Same as 1-2 of MV infra costs
+1. Same as 1-2 of MV infra costs (except don't use -ot Byte)
 2. Calculate cost: RES * COST * lv_km
     ```
     gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km.tif --outfile=lv_cost.tif --calc="0.25*15000*A"

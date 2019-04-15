@@ -143,7 +143,7 @@ def costs(country):
         print(f"Costs\tstart\t{country}")
         aoi = admin.loc[admin[code] == country]
         roads_raster, affine = gf.prepare_roads(costs_in, aoi, targets_in)
-        gf.save_raster(costs_out, roads_raster, affine)
+        gf.save_raster(costs_out, roads_raster, affine, nodata=-1)
 
         msg = f"Costs\tDONE\t{country}"
     except Exception as e:

@@ -12,10 +12,8 @@ from argparse import ArgumentParser
 import geopandas as gpd
 import rasterio
 
-sys.path.append("gridfinder")
-sys.path.append("access-estimator")
 from gridfinder import clip_raster, save_raster
-from access_estimator.access_rates import make_same_as
+from accessestimator.access_rates import make_same_as
 
 def clip_all(raster_in, admin_in, raster_shape_dir, dir_out, code="ADM0_A3"):
     raster_in = Path(raster_in).expanduser()
