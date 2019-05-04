@@ -1,4 +1,5 @@
 # Issues
+- Redo costs_with_mv with new layers
 - Isolated networks
 - LV calc should take into account demand
 - Filter based on slope/altitude? Pre-filter NTL, set higher cost, post-filter again
@@ -55,7 +56,7 @@
 1. Use `clip_to_countries.py` to clip to each country outline.
 2. Use `filter.py` as follows:
     ```
-    energy-infra/scripts/filter.py data/targets data/targets_slope -f data/land '<210' -f data/slope '<25'
+    energy-infra/scripts/filter.py data/targets data/targets_fix -f data/land '<210' -f data/slope '<25' -f data/landscan '>0'
     ```
 
 # Modelling
