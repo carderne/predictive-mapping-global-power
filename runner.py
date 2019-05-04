@@ -264,7 +264,7 @@ def local(country):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("tool")
+    parser.add_argument("tool", help="One of targets, cost, dijk, vector, pop_elec, local")
     parser.add_argument("--countries")
     parser.add_argument("--targets_dir", default=targets_dir)
     parser.add_argument("--costs_dir", default=costs_dir)
