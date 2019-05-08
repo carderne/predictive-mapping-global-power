@@ -7,6 +7,7 @@
 - Drop outside of 60deg N/S
 - Remove ~50km past HV in some countries
 - Use HV and MV everywhere. Use MV05 in very dense/developed countries. Don't use in other areas/exclude from mountainous?
+- Using 05 as default for LV
 
 # Preparation
 ## Sources

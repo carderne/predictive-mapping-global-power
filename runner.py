@@ -212,6 +212,7 @@ def vector(country):
 def pop_elec(country):
     targets_in = get_filename(targets_dir, country)
     pop_elec_out = get_filename(pop_elec_dir, country)
+    weight_out = pop_elec_out.split(".")[0] + "_W.tif"
 
     try:
         print(f"PopElec\tstart\t{country}")
@@ -221,8 +222,11 @@ def pop_elec(country):
         pop, urban, ntl, targets, affine, crs = ea.regularise(
             country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
         )
-        pop_elec, access_model_total = ea.estimate(pop, urban, ntl, targets, access)
+        pop_elec, access_model_total, weights = ea.estimate(
+            pop, urban, ntl, targets, access
+        )
         gf.save_raster(pop_elec_out, pop_elec, affine, crs)
+        gf.save_raster(weight_out, weights, affine, crs)
 
         msg = f"PopElec\tDONE\t{country}\t\treal: {access['total']:.2f}\tmodel: {access_model_total:.2f}"
     except Exception as e:
@@ -242,12 +246,23 @@ def local(country):
 
     try:
         print(f"Local\tstart\t{country}")
+
         pop_elec_rd = rasterio.open(pop_elec_in)
         pop_elec = pop_elec_rd.read(1)
         affine = pop_elec_rd.transform
         crs = pop_elec_rd.crs
 
-        costs = ea.apply_lv_length(pop_elec)
+        aoi = admin.loc[admin[code] == country]
+        access = aoi[["total", "urban", "rural"]].iloc[0].to_dict()
+        peak_kw_pp = 0.1
+        people_per_hh = 5
+        if access["total"] >= 0.95:
+            peak_kw_pp = 2
+            people_per_hh = 3
+
+        costs = ea.apply_lv_length(
+            pop_elec, peak_kw_pp=peak_kw_pp, people_per_hh=people_per_hh
+        )
         gf.save_raster(lv_out, costs, affine, crs)
 
         msg = f"Local\tDONE\t{country}"
@@ -264,7 +279,9 @@ def local(country):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("tool", help="One of targets, cost, dijk, vector, pop_elec, local")
+    parser.add_argument(
+        "tool", help="One of targets, cost, dijk, vector, pop_elec, local"
+    )
     parser.add_argument("--countries")
     parser.add_argument("--targets_dir", default=targets_dir)
     parser.add_argument("--costs_dir", default=costs_dir)
