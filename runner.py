@@ -10,6 +10,8 @@ import argparse
 import shutil
 from pathlib import Path
 from multiprocessing import Pool
+
+import numpy as np
 import yaml
 
 import geopandas as gpd
@@ -260,12 +262,12 @@ def local(country):
             peak_kw_pp = 2
             people_per_hh = 3
 
-        costs = ea.apply_lv_length(
+        lengths = ea.apply_lv_length(
             pop_elec, peak_kw_pp=peak_kw_pp, people_per_hh=people_per_hh
         )
-        gf.save_raster(lv_out, costs, affine, crs)
-
-        msg = f"Local\tDONE\t{country}"
+        gf.save_raster(lv_out, lengths, affine, crs)
+        total_length = np.sum(lengths)
+        msg = f"Local\tDONE\t{country}\tTot length: {total_length} km"
     except Exception as e:
         msg = f"Local\tFAILED\t{country}\t{e}"
         if raise_errors:

@@ -1,14 +1,3 @@
-# Issues
-- Redo costs_with_mv with new layers
-- Isolated networks
-- LV calc should take into account demand
-- Filter based on slope/altitude? Pre-filter NTL, set higher cost, post-filter again
-- Post-filter oceans or split islands
-- Drop outside of 60deg N/S
-- Remove ~50km past HV in some countries
-- Use HV and MV everywhere. Use MV05 in very dense/developed countries. Don't use in other areas/exclude from mountainous?
-- Using 05 as default for LV
-
 # Preparation
 ## Sources
 1. planet.pbf from https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading
@@ -22,64 +11,71 @@
 9. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
 
 ## VIIRS
-1. Use dl.sh to download
-2. Use ext.sh (and ext.py) to extract into monthly directories
-3. Use merge.sh to merge each month into global rasters
-4. Similar for single annual raster
+### VIIRS monthly
+1. Use `noaa_scrape.py > ntl_links.txt` to get a list of NTL URLs.
+2. Use `wget -i ntl_links.txt` to download all to the current directory.
+3. Use `for f in *; do tar -xvzf {file} --wildcards --no-anchored '*rade*'; done`
+4. Organize into monthly folders 01-12
+5. Use `for f in {01..12}; do gdal_merge.py -o $f.tif $f/*.tif; done`
 
-## Roads
-1. ogr2poly.py to convert simple admin to separate poly files (and buffer by 100km)
-    ```
-    python ogr2poly.py -b 100000 -f ADM0_A3 ne_50m_admin0.gpkg
-    ```
+### VIIRS annual
+1. Use `noaa_scrap.py` but with different target links.
+2. Use `wget` as above.
+3. Use `tar -xvzf {file} --wildcards --no-anchored '*vcm-orm-ntl*'`
+4. Use `gdal_merge.py -o ntl_annual.tif *.tif`
 
-2. clip_osm.py to clip into individual country o5m files:
-    ```
-    python3 clip_osm.py planet.pbf poly o5m
-    ```
+## Costs
+1. Convert admin to poly files (buffer by 100km) `ogr2poly.py -b 100000 -f ADM0_A3 ne_50m_admin0.gpkg`
+2. Clip into individual country o5m files: `clip_osm.sh planet.pbf poly o5m`
 
-3. Edit /usr/share/gdal/2.2/osmconf.ini:
+3. Edit `/usr/share/gdal/2.2/osmconf.ini`:
     ```
     [lines]
     ...
     attributes=...,power,voltage
     ```
 
-3. osm2gpkg.py to convert to roads gpkg
-3. Use merge_lots.sh
+3. Convert to costs gpkg: `o5m2gpkg.sh o5m costs_vec roads`
 
 ## Grid
-1. Use o5m output from step (2) in [Roads](Roads)
-2. Use extract_osm_grid.py
-3. Use merge_lots.sh
+1. Use o5m output from step (2) in [Costs](Costs)
+2. Convert to grid gpkg: `o5m2gpkg.sh o5m hv_vec`
+3. Combine into a single gpkg: `merge_gpkg.sh hv`
 
 ## Filtering on land cover and slope
-1. Use `clip_to_countries.py` to clip to each country outline.
-2. Use `filter.py` as follows:
+1. Repeat for each raster to clip to country outline:
     ```
-    energy-infra/scripts/filter.py data/targets data/targets_fix -f data/land '<210' -f data/slope '<25' -f data/landscan '>0'
+    clip_to_countries.py raster_in=land.tif admin_in=ne50m.gpkg raster_shape_dir=targets dir_out=land_clipped
+    ```
+2. Filter targets using these layers:
+    ```
+    filter.py targets targets_filt -f data/land '<210' -f data/slope '<25' -f data/landscan '>2'
     ```
 
 # Modelling
 ## Gridfinder
-1. Run `runner.py targets`
-2. Run `runner.py costs`
-3. Run `runner.py dijk`
-4. Create grid raster mask: `rasterize.sh data/grid_vec data/grid`
+### High-MV
+1. Create targets rasters: `runner.py targets`
+2. Create costs rasters: `runner.py costs`
+3. Run model: `runner.py dijk`
+4. Create grid raster mask: `rasterize.sh data/hv_vec data/hv`
 5. Subtract mask from guess:
     ```
-
+    subtract_all.py --orig=mv --sub=hv --out=mv_sub
     ```
-6. Run `runner.py vector`
 
-## Access-Estimator
-1. Run `runner.py pop_elec`
+### Low-MV
+1. Create targets05 with `--ntl_threshold=0.5`
+2. Create new costs rasters with: `make_costs_with_mv.sh mv costs costs_with_mv`
+3. Rerun model and subtract `mv` from `mv05`
+
+# Access-Estimator
+1. Run `runner.py pop_elec` using targets05 (allow more electrified places).
 2. Run `runner.py local`
 
 # Processing results
 ## HV
 ### For HV infra
-- QGIS: Rasterize high-res (same cell size and extent as mv, burn 1, nodata 0, pre-init 0, COMPRESS=LZW, TILED=YES)
 - Multiply by 0.49*USD/km (cost = 200k USD/km)
 
 ### For buffer zone
@@ -95,52 +91,30 @@ All QGIS.
 1. Filter `ne_50m_admin0_access.gpkg` with `total==1` to get only countries with 100% access.
 2. Use to clip urb.tif:
     ```
-    gdalwarp -cutline ~/data/admin/ne_50m_admin0_access100.gpkg ~/data/pop/urb.tif ~/data/pop/urb_only100.tif
+    gdalwarp -cutline ne_50m_admin0_access100.gpkg urb.tif urb_only100.tif
     ```
 3. Raster calculator result keeping only >=3:
     ```
-    gdal_calc.py -A ~/data/pop/urb_only100.tif --outfile=~/data/pop/underground_mask.tif --calc="A>=3" --NoDataValue=0
+    gdal_calc.py -A urb_only100.tif --outfile=underground_mask.tif --calc="A>=3" --NoDataValue=0
     ```
 
-### To get single gpkg
-1. Use merge_lots.sh
-
-### To get infra costs
-1. Null guess rasters
+### Infra costs
+1. Merge
     ```
-    for i in *; do gdal_translate -of GTiff -a_nodata 0 $i ../nulled/$i; done
+    gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -ot Byte -n 0 -a_nodata 0 -o mv.tif *.tif
     ```
 
-2. Merge
+2. Use HV buffer and filter outside
     ```
-    gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -ot Byte -n 0 -a_nodata 0 -o mv_binary.tif nulled/*.tif
-    ```
-
-3. Use HV buffer and filter outside
-    ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_km.tif -B hv_buffer_50km.tif --outfile=mv_km_filt.tif --calc="A*B"
-    ```
-
-4. Null again
-    ```
-    gdal_translate -co "COMPRESS=LZW" -co "TILED=YES" -of GTiff -a_nodata 0 mv_binary_filt.tif mv_binary_filt_null.tif
-    ```
-
-5. Multiply by 0.49*USD/km (cost = 40k USD/km)
-    ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_binary.tif --outfile=mv_km.tif --calc="0.49*40000*A"
+    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_km.tif -B hv_buffer_50km.tif --outfile=mv_km_filt.tif --calc="A*B" --NoDataValue=0
     ```
 
 ## LV
 Output from model is km per cell.
-1. Same as 1-2 of MV infra costs (except don't use -ot Byte)
+1. Same as 1 of MV infra costs (except use `-ot Float16`)
 2. Calculate cost: RES * COST * lv_km
-    ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A lv_km.tif --outfile=lv_cost.tif --calc="0.25*15000*A"
-    ```
 
 # GDAL/OGR/OSM stuff
-
 Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 
 - Convert: `osmconvert swaziland.pbf -B=eSwatini.poly -o=swaziland.o5m`
@@ -150,10 +124,11 @@ Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
 - merge: `ogrmerge.py -f GPKG -o ../merged1.gpkg *.gpkg`
 - compress: `gdal_translate -of GTiff -co "COMPRESS=LZW" -co "TILED=YES" Kenya.tif kcomp.tif`
 - tiling: `for i in *; do gdal_retile.py -ps 10000 10000 -targetDir ../tiled $i; done`
--
-- # Admin modifications
+- multiply: `gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_binary.tif --outfile=mv_km.tif --calc="0.49*40000*A"`
+
+# Admin modifications
 ### Dropped
-KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL NIU
+KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL NIU VAT
 
 ### Trimmed
 USA (W of date line, Hawaii, islands)
