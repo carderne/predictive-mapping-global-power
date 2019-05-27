@@ -4,11 +4,10 @@
 2. GHS from: https://ghsl.jrc.ec.europa.eu/
 3. GHS URB/RUR from: https://ghsl.jrc.ec.europa.eu/ghs_smod.php
 4. VIIRS from: https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html (use noaa_scrape.py to get all monthly files)
-5. GADM from: https://gadm.org/
-6. Simple admin (NE_50m_admin0) from: http://naturalearthdata.com/
-7. LandScan population raster
-8. DEM from HydroSheds
-9. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
+5. Simple admin (NE_50m_admin0) from: http://naturalearthdata.com/
+6. LandScan population raster
+7. DEM from HydroSheds
+8. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
 
 ## VIIRS
 ### VIIRS monthly
@@ -78,26 +77,7 @@
 ### For HV infra
 - Multiply by 0.49*USD/km (cost = 200k USD/km)
 
-### For buffer zone
-All QGIS.
-1. project to EPSG:54002
-2. buffer 100km
-3. dissolve
-4. reproject EPSG:4326
-5. rasterize same as above
-
 ## MV
-### Underground/overground mask
-1. Filter `ne_50m_admin0_access.gpkg` with `total==1` to get only countries with 100% access.
-2. Use to clip urb.tif:
-    ```
-    gdalwarp -cutline ne_50m_admin0_access100.gpkg urb.tif urb_only100.tif
-    ```
-3. Raster calculator result keeping only >=3:
-    ```
-    gdal_calc.py -A urb_only100.tif --outfile=underground_mask.tif --calc="A>=3" --NoDataValue=0
-    ```
-
 ### Infra costs
 1. Merge
     ```
@@ -107,6 +87,25 @@ All QGIS.
 2. Use HV buffer and filter outside
     ```
     gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_km.tif -B hv_buffer_50km.tif --outfile=mv_km_filt.tif --calc="A*B" --NoDataValue=0
+    ```
+
+### Filtering remote and oceans
+1. Buffer HV by 100km (use EPSG:54002), dissolve, reproject EPSG:4326
+2. Use ne_10m_ocean and buffer -0.1 degrees
+3. Rasterize as follows (add `-i` for oceans to invert):
+    ```
+    gdal_rasterize -burn 1.0 -tr 0.01 0.01 -init 0.0 -a_nodata 0.0 -te {mv_extents} -ot Byte -of GTiff -co COMPRESS=LZW in.gpkg out.tif
+    ```
+
+### Underground/overground mask
+1. Filter `ne_50m_admin0_access.gpkg` with `total==1` to get only countries with 100% access.
+2. Use to clip urb.tif:
+    ```
+    gdalwarp -cutline ne_50m_admin0_access100.gpkg urb.tif urb_only100.tif
+    ```
+3. Raster calculator result keeping only >=3:
+    ```
+    gdal_calc.py -A urb_only100.tif --outfile=underground_mask.tif --calc="A>=3" --NoDataValue=0
     ```
 
 ## LV
