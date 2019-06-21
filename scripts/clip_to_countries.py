@@ -30,8 +30,11 @@ def clip_all(raster_in, admin_in, raster_shape_dir, dir_out, code="ADM0_A3"):
         c_out = dir_out / f"{c}.tif"
 
         aoi = admin[admin[code] == c]
-        arr, aff, crs = clip_raster(raster_in, aoi)
-
+        try:
+            arr, aff, crs = clip_raster(raster_in, aoi)
+        except rasterio.errors.WindowError:
+            print("No input data for this AOI - skipped")
+            continue
         targets_in = raster_shape_dir / f"{c}.tif"
         targets_rd = rasterio.open(targets_in)
         dest_arr_like = targets_rd.read(1)
