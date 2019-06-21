@@ -15,6 +15,7 @@ import rasterio
 from gridfinder import clip_raster, save_raster
 from accessestimator.access_rates import make_same_as
 
+
 def clip_all(raster_in, admin_in, raster_shape_dir, dir_out, code="ADM0_A3"):
     raster_in = Path(raster_in).expanduser()
     admin_in = Path(admin_in).expanduser()
@@ -44,15 +45,17 @@ def clip_all(raster_in, admin_in, raster_shape_dir, dir_out, code="ADM0_A3"):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("raster_in")
-    parser.add_argument("admin_in")
-    parser.add_argument("raster_shape_dir")
-    parser.add_argument("dir_out")
+    parser.add_argument("raster_in", help="Input raster")
+    parser.add_argument("dir_out", help="Output directory")
+    parser.add_argument("--admin_in", "-a")
+    parser.add_argument("--raster_shape_dir", "-s")
     parser.add_argument("--code", default="ADM0_A3")
     args = parser.parse_args()
 
-    clip_all(raster_in=args.raster_in,
-            admin_in=args.admin_in,
-            raster_shape_dir=args.raster_shape_dir,
-             dir_out=args.dir_out,
-             code=args.code)
+    clip_all(
+        raster_in=args.raster_in,
+        admin_in=args.admin_in,
+        raster_shape_dir=args.raster_shape_dir,
+        dir_out=args.dir_out,
+        code=args.code,
+    )

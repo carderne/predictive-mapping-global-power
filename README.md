@@ -44,7 +44,7 @@
 ## Filtering on land cover and slope
 1. Repeat for each raster to clip to country outline:
     ```
-    clip_to_countries.py raster_in=land.tif admin_in=ne50m.gpkg raster_shape_dir=targets dir_out=land_clipped
+    clip_to_countries.py land.tif land -a=ne_50m_admin0.gpkg -s=targets
     ```
 2. Filter targets using these layers:
     ```
@@ -110,7 +110,7 @@
 
 ## LV
 Output from model is km per cell.
-1. Same as 1 of MV infra costs (except use `-ot Float16`)
+1. Same as 1 of MV infra costs (except use `-ot Float32`)
 2. Calculate cost: RES * COST * lv_km
 
 # GDAL/OGR/OSM stuff

@@ -214,7 +214,7 @@ def vector(country):
 def pop_elec(country):
     targets_in = get_filename(targets_dir, country)
     pop_elec_out = get_filename(pop_elec_dir, country)
-    weight_out = pop_elec_out.split(".")[0] + "_W.tif"
+    weight_out = pop_elec_out.parents[0] / (str(pop_elec_out.stem) + "_W.tif")
 
     try:
         print(f"PopElec\tstart\t{country}")
