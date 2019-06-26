@@ -60,11 +60,11 @@
 4. Create grid raster mask: `rasterize.sh data/hv_vec data/hv`
 5. Subtract mask from guess:
     ```
-    subtract_all.py --orig=mv --sub=hv --out=mv_sub
+    subtract_rast.py mv hv mv_sub
     ```
 
 ### Low-MV
-1. Create targets05 with `--ntl_threshold=0.5`
+1. Create targets05 with `--ntl_threshold=0.05`
 2. Create new costs rasters with: `make_costs_with_mv.sh mv costs costs_with_mv`
 3. Rerun model and subtract `mv` from `mv05`
 

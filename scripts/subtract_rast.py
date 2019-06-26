@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from argparse import ArgumentParser
 
+import numpy as np
 import rasterio
 from gridfinder import save_raster
 
@@ -26,9 +27,10 @@ def subtract_rast(rast_in, sub_in, subbed_out):
 def subtract_all(rast_dir, sub_dir, subbed_dir):
     for rast_in in rast_dir.iterdir():
         name = rast_in.name
+        print(name)
         sub_in = sub_dir / name
         subbed_out = subbed_dir / name
-        if not outfile.is_file():
+        if not subbed_out.is_file():
             subtract_rast(rast_in, sub_in, subbed_out)
 
 
