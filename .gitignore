@@ -1,6 +1,5 @@
 # Custom
-data/poly
-
+results/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

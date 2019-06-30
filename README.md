@@ -8,6 +8,50 @@
 6. LandScan population raster
 7. DEM from HydroSheds
 8. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
+9, Shorelines https://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html
+
+## Admin
+### Buffer coastal places
+1. Buffer admin 0.05 degrees
+2. Intersection with ocean layer
+3. Buffer another 0.05 degrees
+4. Merge with admin layer
+5. Dissolve by field ADM0_A3
+
+### Modifications
+1. Dropped
+    ```
+    KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL NIU VAT ALD BMU CPV MUS SYC
+    ```
+
+2. Trimmed
+
+    ```
+    USA (W of date line, Hawaii, islands)
+    RUS (E of date line, islands)
+    CAN (northern islands)
+    ECU (Galapagos)
+    CHL (Easter Island)
+    MEX (islands)
+    ESP (Canary)
+    PRT (Madeira, Azores)
+    NOR (islands)
+    IND (islands)
+    FRA (islands)
+    NLD (islands)
+    AUS (islands)
+    NZL (islands)
+    ```
+
+3. Split
+    ```
+    USA (USA, ALK)
+    FRA (FRA, GUI)
+    RUS (RUS, PRU, RNW, RUE, SAK, RUN, RUW, CRM)
+    AUS (AUW, AUE, TAS)
+    CAN (CNF, CNN, CAQ, CAB, CAS, CAX, CAY, CAZ)
+    BRA (BRA, BAN)
+    ```
 
 ## VIIRS
 ### VIIRS monthly
@@ -46,7 +90,8 @@
     ```
     clip_to_countries.py land.tif land -a=ne_50m_admin0.gpkg -s=targets
     ```
-2. Filter targets using these layers:
+2. Use `nonan.sh` on `slope` folder (and others?) to change NaN to 0.
+3. Filter targets using these layers:
     ```
     filter.py targets targets_filt -f data/land '<210' -f data/slope '<25' -f data/landscan '>2'
     ```
@@ -66,7 +111,7 @@
 ### Low-MV
 1. Create targets05 with `--ntl_threshold=0.05`
 2. Create new costs rasters with: `make_costs_with_mv.sh mv costs costs_with_mv`
-3. Rerun model and subtract `mv` from `mv05`
+3. Rerun model and subtract `mv` from `mv05` to create `mv05_sub`
 
 # Access-Estimator
 1. Run `runner.py pop_elec` using targets05 (allow more electrified places).
@@ -78,23 +123,21 @@
 - Multiply by 0.49*USD/km (cost = 200k USD/km)
 
 ## MV
-### Infra costs
-1. Merge
+### Combine mv and mv05 and merge
+1. Use `combine.py` to use mv+mv05 for countries with access >= 0.9, and only mv in all other countries.
+2. Merge
     ```
     gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -ot Byte -n 0 -a_nodata 0 -o mv.tif *.tif
     ```
-
-2. Use HV buffer and filter outside
-    ```
-    gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_km.tif -B hv_buffer_50km.tif --outfile=mv_km_filt.tif --calc="A*B" --NoDataValue=0
-    ```
+3. Convert CRS: `gdal_edit.py -a_srs EPSG:4326 mv_comb.tif`
 
 ### Filtering remote and oceans
 1. Buffer HV by 100km (use EPSG:54002), dissolve, reproject EPSG:4326
-2. Use ne_10m_ocean and buffer -0.1 degrees
-3. Rasterize as follows (add `-i` for oceans to invert):
+3. Get intersection of GHSSG_I_L1 with HV buf.
+4. Clip raster:
     ```
-    gdal_rasterize -burn 1.0 -tr 0.01 0.01 -init 0.0 -a_nodata 0.0 -te {mv_extents} -ot Byte -of GTiff -co COMPRESS=LZW in.gpkg out.tif
+    gdalwarp -s_srs EPSG:4326 -t_srs EPSG:4326 -ot Byte -of GTiff -tr 0.004166666700005837 -0.00416666669997455 -tap -cutline hv_and_land.gpkg -dstnodata 0.0 -wo NUM_THREADS=2 -multi -co COM
+PRESS=LZW mv_comb_wgs84.tif mv_clipped.tif
     ```
 
 ### Underground/overground mask
@@ -113,43 +156,11 @@ Output from model is km per cell.
 1. Same as 1 of MV infra costs (except use `-ot Float32`)
 2. Calculate cost: RES * COST * lv_km
 
-# GDAL/OGR/OSM stuff
-Cheat sheet: https://github.com/dwtkns/gdal-cheat-sheet
+# Web-map
+## HV
+1. Create MBTiles with min zoom 2 max 8 dpi 200?
 
-- Convert: `osmconvert swaziland.pbf -B=eSwatini.poly -o=swaziland.o5m`
-- Filter: `osmfilter swaziland.o5m --keep="highway=motorway =trunk =primary =secondary =tertiary"`
-- ogr2ogr: `ogr2ogr -f GPKG streets3.gpkg /vsistdin/ lines`
-- mosaic: `gdal_merge.py -co "COMPRESS=LZW" -co "TILED=YES" -o mv_binary.tif nulled/*.tif`
-- merge: `ogrmerge.py -f GPKG -o ../merged1.gpkg *.gpkg`
-- compress: `gdal_translate -of GTiff -co "COMPRESS=LZW" -co "TILED=YES" Kenya.tif kcomp.tif`
-- tiling: `for i in *; do gdal_retile.py -ps 10000 10000 -targetDir ../tiled $i; done`
-- multiply: `gdal_calc.py --co "COMPRESS=LZW" --co "TILED=YES" -A mv_binary.tif --outfile=mv_km.tif --calc="0.49*40000*A"`
-
-# Admin modifications
-### Dropped
-KIR FJI ATC PCN HMD SGS KAS ATF FSM PYF IOT IOA MDV PLW SHN GRL NIU VAT
-
-### Trimmed
-USA (W of date line, Hawaii, islands)
-RUS (E of date line, islands)
-CAN (northern islands)
-ECU (Galapagos)
-CHL (Easter Island)
-MEX (islands)
-ESP (Canary)
-PRT (Madeira, Azores)
-NOR (islands)
-IND (islands)
-FRA (islands)
-NLD (islands)
-AUS (islands)
-NZL (islands)
-
-### Split
-USA (USA, ALK)
-FRA (FRA, GUI)
-RUS (RUS, PRU, RNW, RUE, SAK, RUN, RUW)
-AUS (AUW, AUE, TAS)
-CAN (CNF, CNN, CAQ, CAB, CAS)
-BRA (BRA, BAN)
-
+## MV
+1. r.thin
+2. r.to.vect
+3. MBtiles same values
