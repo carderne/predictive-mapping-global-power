@@ -1,8 +1,0 @@
-Asia:       1.00
-Caribbean:  1.13
-Oceania:    1.36
-Mideast:    1.20
-C America:  1.13
-Africa:     1.19
-Europe:     1.00
-N America:  1.00
