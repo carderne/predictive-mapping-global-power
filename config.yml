@@ -1,13 +1,13 @@
 inputs:
   admin: ~/Code/energy-infra/data/ne_50m_admin0.gpkg
   admin_code: ADM0_A3
-  ntl_monthly: ~/data/ntl/monthly
-  ntl_annual: ~/data/ntl/annual/world.tif
-  pop: ~/data/pop/ghs.tif
-  urban: ~/data/pop/urb.tif
+  ntl_monthly: ~/Temp/data/ntl/monthly
+  ntl_annual: ~/Temp/data/ntl_annual.tif
+  pop: ~/Temp/data/ghs.tif
+  urban: ~/Temp/data/urb.tif
 
 outputs:
-  base: ~/data/
+  base: ~/Temp/data/
   scratch: ~/data/scratch/
   targets: targets
   costs: costs
@@ -19,4 +19,4 @@ outputs:
 options:
   percentile: 70
   ntl_threshold: 0.1
-  threads: 7
+  threads: 1

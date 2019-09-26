@@ -47,6 +47,7 @@ threads = cfg["options"]["threads"]
 raise_errors = False
 
 admin = gpd.read_file(admin_in)
+admin = admin.loc[admin["total"] < 1]
 
 
 def get_dirname(tool):
@@ -217,9 +218,12 @@ def pop_elec(country):
     weight_out = pop_elec_out.parents[0] / (str(pop_elec_out.stem) + "_W.tif")
 
     try:
-        print(f"PopElec\tstart\t{country}")
+        msg = ""
+        print(f"\n\nPopElec\tstart\t{country}")
         aoi = admin.loc[admin[code] == country]
         access = aoi[["total", "urban", "rural"]].iloc[0].to_dict()
+        if access["total"] == 1:
+            return
 
         pop, urban, ntl, targets, affine, crs = ea.regularise(
             country, aoi, pop_in, urban_in, ntl_ann_in, targets_in
@@ -228,7 +232,7 @@ def pop_elec(country):
             pop, urban, ntl, targets, access
         )
         gf.save_raster(pop_elec_out, pop_elec, affine, crs)
-        gf.save_raster(weight_out, weights, affine, crs)
+        # gf.save_raster(weight_out, weights, affine, crs)
 
         msg = f"PopElec\tDONE\t{country}\t\treal: {access['total']:.2f}\tmodel: {access_model_total:.2f}"
     except Exception as e:

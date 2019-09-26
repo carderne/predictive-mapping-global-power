@@ -8,7 +8,7 @@
 6. LandScan population raster
 7. DEM from HydroSheds
 8. Land cover from http://maps.elie.ucl.ac.be/CCI/viewer/index.php
-9, Shorelines https://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html
+9. Shorelines https://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html
 
 ## Admin
 ### Buffer coastal places
@@ -136,8 +136,7 @@
 3. Get intersection of GHSSG_I_L1 with HV buf.
 4. Clip raster:
     ```
-    gdalwarp -s_srs EPSG:4326 -t_srs EPSG:4326 -ot Byte -of GTiff -tr 0.004166666700005837 -0.00416666669997455 -tap -cutline hv_and_land.gpkg -dstnodata 0.0 -wo NUM_THREADS=2 -multi -co COM
-PRESS=LZW mv_comb_wgs84.tif mv_clipped.tif
+    gdalwarp -s_srs EPSG:4326 -t_srs EPSG:4326 -ot Byte -of GTiff -tr 0.004166666699998 -0.004166666699999 -tap -cutline hv_gshhg.gpkg -dstnodata 0.0 -wo NUM_THREADS=2 -multi -co COMPRESS=LZW mv_thin.tif mv_thin_clipped.tif
     ```
 
 ### Underground/overground mask
@@ -158,7 +157,7 @@ Output from model is km per cell.
 
 # Web-map
 ## HV
-1. Create MBTiles with min zoom 2 max 8 dpi 200?
+1. Create MBTiles with min zoom 2 max 9 dpi 96?
 
 ## MV
 1. r.thin
