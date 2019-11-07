@@ -1,22 +1,22 @@
 inputs:
-  admin: ~/Code/energy-infra/data/ne_50m_admin0.gpkg
+  admin: admin_boundaries.gpkg  # admin boundaries
   admin_code: ADM0_A3
-  ntl_monthly: ~/Temp/data/ntl/monthly
-  ntl_annual: ~/Temp/data/ntl_annual.tif
-  pop: ~/Temp/data/ghs.tif
-  urban: ~/Temp/data/urb.tif
+  ntl_monthly: data/ntl/monthly/  # a directory containing 12 monthly NTL rasters
+  ntl_annual: data/ntl_annual.tif  # a single averaged NTL raster
+  pop: data/pop.tif  # a population raster
+  urban: data/urb.tif  # raster showing urban extents
 
 outputs:
-  base: ~/Temp/data/
-  scratch: ~/data/scratch/
-  targets: targets
-  costs: costs
-  guess: guess
-  vector: guess_vec
-  pop_elec: pop_elec
-  local: lv
+  base: data/  # base directory for all outputs
+  scratch: data/scratch/  # directory for ephemeral outputs
+  targets: targets/  # this and the below are all relative to the base directory
+  costs: costs/
+  guess: mv/
+  vector: mv_vec/
+  pop_elec: pop_elec/
+  local: lv/
 
 options:
-  percentile: 70
-  ntl_threshold: 0.1
-  threads: 1
+  percentile: 70  # the percentile cutoff to use in averaging NTL rasters
+  ntl_threshold: 0.1  # value (after filtering) to consider as electrified
+  threads: 1  # number of processor threads to use
