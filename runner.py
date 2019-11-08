@@ -47,7 +47,6 @@ threads = cfg["options"]["threads"]
 raise_errors = False
 
 admin = gpd.read_file(admin_in)
-admin = admin.loc[admin["total"] < 1]
 
 
 def get_dirname(tool):
