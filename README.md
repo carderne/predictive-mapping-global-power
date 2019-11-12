@@ -200,12 +200,11 @@ In addition, a mask can be created to determine which MV/LV lines are overground
 To create a web map of targets, HV and MV and display using MapBox studio. Targets can be used as a raster layer. HV lines should already be in vector format. MV lines can be converted to vector as follows (using QGIS):
 1. r.thin
 2. r.to.vect
-3. MBtiles same values
 
-Then (again in QGIS) all three layers can be converted to MVTiles using the following settings:
-- zoom: 2
-- max: 9
-- dpi: 96
+Then (again in QGIS) install the 'Tiles XYZ' Plugin and all three layers can be converted to MBTiles using the following settings:
+- Min zooom: 2
+- Max zoom: 9
+- DPI: 96
 
 ## 9. Other
 Please get in touch with the authors (or with me directly via GitHub) for any other questions.
