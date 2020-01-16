@@ -1,5 +1,9 @@
-# Methods for: Predictive mapping of the global power system using open data (in review)
-This repository contains preparatory scripts, data inputs and instructions to reproduce results found in this forthcoming paper. (The paper and the resultant data and visualizations will be linked here once published.)
+# Methods for: Predictive mapping of the global power system using open data 
+This repository contains preparatory scripts, data inputs and instructions to reproduce results found in this forthcoming paper.
+
+Full paper: [Predictive mapping of the global power system using open data](https://www.nature.com/articles/s41597-019-0347-4)  
+Visualization: [gridfinder.org](https://www.nature.com/articles/s41597-019-0347-4)  
+Data download: [Zenodo repo](https://doi.org/10.5281/zenodo.3369106)
 
 ## 1. Requirements for reproduction
 A machine with a minimum of 32 GB of memory is recommended, along with at least 500 GB of available hard drive space and preferably at least four physical cores. All processing was done using Ubuntu 18.04 with the following software:
