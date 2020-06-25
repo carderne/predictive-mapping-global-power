@@ -131,7 +131,7 @@ Once this is completed, the targets rasters can be filtered using these new rast
 The costs rasters are rasters that define the 'cost' of traversing a particular pixel. Please see the [gridfinder](https://github.com/carderne/gridfinder) repository and the paper for more information. To create these vectors from the OpenStreetMap source data, do the following:
 1. Convert admin to poly files (buffer by 100km) `ogr2poly.py -b 100000 -f ADM0_A3 ne_50m_admin0.gpkg`
 2. Clip into individual country o5m files: `clip_osm.sh planet.pbf poly o5m`
-3. Edit `/usr/share/gdal/2.2/osmconf.ini` as follows:
+3. Edit `/usr/share/gdal/2.2/osmconf.ini` as follows (may be `/usr/share/gdal/osmconf.ini` on newer versions):
     ```
     [lines]
     ...
